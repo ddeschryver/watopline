@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>W/A Research — The Top Line Weekly Briefing | March 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ─── Tokens ─────────────────────────────────── */
+  :root {
+    --navy:        #0B1F3A;
+    --navy-mid:    #122b52;
+    --navy-light:  #1a3a6b;
+    --blue:        #1B5EA8;
+    --blue-bright: #2478d4;
+    --silver:      #8A96A8;
+    --silver-lt:   #BEC7D4;
+    --fog:         #E8ECF2;
+    --white:       #FFFFFF;
+    --ink:         #1C2533;
+    --text:        #3D4756;
+    --accent:      #D4862A;   /* warm amber — single pop colour */
+    --accent-lt:   #FDF3E8;
+    --radius:      4px;
+    --max:         860px;
+  }
+
+  /* ─── Reset ──────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  img { display: block; max-width: 100%; }
+  a   { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* ─── Body ───────────────────────────────────── */
+  body {
+    font-family: 'Source Sans 3', sans-serif;
+    font-weight: 400;
+    color: var(--text);
+    background: var(--fog);
+    line-height: 1.65;
+  }
+
+  /* ─── Header strip ───────────────────────────── */
+  .header {
+    background: var(--navy);
+    border-bottom: 3px solid var(--blue);
+  }
+
+  .header-inner {
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: 36px 32px 32px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 20px;
+    align-items: start;
+  }
+
+  .header-eyebrow {
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--blue-bright);
+    margin-bottom: 8px;
+  }
+
+  .header-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(22px, 4vw, 34px);
+    font-weight: 700;
+    color: var(--white);
+    line-height: 1.2;
+    margin-bottom: 4px;
+  }
+
+  .header-sub {
+    font-size: 13px;
+    color: var(--silver-lt);
+    font-weight: 300;
+    letter-spacing: 0.3px;
+  }
+
+  /* ─── Video button ───────────────────────────── */
+  .video-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    padding: 10px 18px;
+    border: 1.5px solid rgba(255,255,255,0.25);
+    border-radius: var(--radius);
+    background: rgba(255,255,255,0.07);
+    color: var(--white);
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+    transition: background 0.2s, border-color 0.2s;
+    text-decoration: none;
+  }
+  .video-btn:hover {
+    background: rgba(255,255,255,0.14);
+    border-color: rgba(255,255,255,0.5);
+    text-decoration: none;
+  }
+  .video-btn svg { flex-shrink: 0; }
+
+  /* ─── Intro band ─────────────────────────────── */
+  .intro-band {
+    background: var(--navy-mid);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .intro-inner {
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  .intro-inner p {
+    font-size: 13px;
+    color: var(--silver-lt);
+    font-weight: 300;
+    flex: 1;
+    min-width: 220px;
+  }
+
+  .intro-inner p strong { color: var(--white); font-weight: 600; }
+
+  .intro-inner a { color: #7bb8f5; text-decoration: underline; }
+
+  /* ─── Date badge ─────────────────────────────── */
+  .date-badge {
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 1.8px;
+    text-transform: uppercase;
+    color: var(--silver);
+    background: var(--fog);
+    border: 1px solid var(--silver-lt);
+    border-radius: 2px;
+    padding: 3px 10px;
+    white-space: nowrap;
+  }
+
+  /* ─── Container ──────────────────────────────── */
+  .container {
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: 36px 32px 60px;
+  }
+
+  /* ─── Section label ──────────────────────────── */
+  .section-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .section-label-line {
+    flex: 1;
+    height: 1px;
+    background: var(--silver-lt);
+  }
+  .section-label-text {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 2.2px;
+    text-transform: uppercase;
+    color: var(--silver);
+    white-space: nowrap;
+  }
+
+  /* ─── Item cards ─────────────────────────────── */
+  .item {
+    background: var(--white);
+    border-radius: var(--radius);
+    border: 1px solid var(--silver-lt);
+    margin-bottom: 16px;
+    overflow: hidden;
+    transition: box-shadow 0.18s;
+    animation: fadeUp 0.4s ease both;
+  }
+  .item:hover {
+    box-shadow: 0 6px 24px rgba(11,31,58,0.10);
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* stagger */
+  .item:nth-child(1)  { animation-delay: 0.04s; }
+  .item:nth-child(2)  { animation-delay: 0.08s; }
+  .item:nth-child(3)  { animation-delay: 0.12s; }
+  .item:nth-child(4)  { animation-delay: 0.16s; }
+  .item:nth-child(5)  { animation-delay: 0.20s; }
+  .item:nth-child(6)  { animation-delay: 0.24s; }
+  .item:nth-child(7)  { animation-delay: 0.28s; }
+  .item:nth-child(8)  { animation-delay: 0.32s; }
+  .item:nth-child(9)  { animation-delay: 0.36s; }
+  .item:nth-child(10) { animation-delay: 0.40s; }
+
+  /* accent bar on left for action-score-3 */
+  .item.priority { border-left: 3px solid var(--accent); }
+
+  /* ─── Item head ──────────────────────────────── */
+  .item-head {
+    padding: 14px 20px 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    border-bottom: 1px solid var(--fog);
+  }
+
+  .item-num {
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--navy);
+    color: var(--white);
+    font-size: 11px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1px;
+  }
+
+  .item-meta-block { flex: 1; min-width: 0; }
+
+  .item-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 6px;
+  }
+
+  .tag {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+
+  .tag-state   { background: var(--navy);      color: var(--white); }
+  .tag-sector  { background: var(--navy-light); color: var(--white); }
+  .tag-issue   { background: var(--blue);       color: var(--white); }
+  .tag-date    { background: var(--fog); color: var(--silver); border: 1px solid var(--silver-lt); }
+  .tag-outlet  { background: var(--fog); color: var(--text);   border: 1px solid var(--silver-lt); font-weight: 400; font-style: italic; }
+
+  /* score pill */
+  .score-wrap { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+
+  .score-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+  }
+  .score-3 { background: #FEF0E6; color: #A0440A; border: 1px solid #F5C8A0; }
+  .score-2 { background: #EDF4FF; color: #1B5EA8; border: 1px solid #AECDF5; }
+  .score-1 { background: var(--fog); color: var(--silver); border: 1px solid var(--silver-lt); }
+
+  /* ─── Item body ──────────────────────────────── */
+  .item-body {
+    padding: 14px 20px 12px 20px;
+  }
+
+  .item-headline {
+    font-family: 'Playfair Display', serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1.35;
+    margin-bottom: 8px;
+  }
+
+  .item-summary {
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.68;
+  }
+
+  /* ─── Item foot ──────────────────────────────── */
+  .item-foot {
+    padding: 10px 20px;
+    background: var(--fog);
+    border-top: 1px solid var(--silver-lt);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .item-district {
+    font-size: 11.5px;
+    color: var(--silver);
+    font-style: italic;
+  }
+
+  .read-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--blue);
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+  }
+  .read-link:hover { color: var(--navy); text-decoration: none; }
+  .read-link svg { transition: transform 0.15s; }
+  .read-link:hover svg { transform: translateX(3px); }
+
+  /* ─── Footer ─────────────────────────────────── */
+  .footer {
+    background: var(--navy);
+    border-top: 2px solid var(--blue);
+  }
+  .footer-inner {
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: 28px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .footer-left p {
+    font-size: 11.5px;
+    color: var(--silver);
+    line-height: 1.6;
+  }
+  .footer-left p strong { color: var(--white); font-weight: 600; }
+  .footer-left a { color: #7bb8f5; }
+
+  .footer-logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 13px;
+    color: rgba(255,255,255,0.35);
+    letter-spacing: 0.5px;
+    text-align: right;
+    font-style: italic;
+    flex-shrink: 0;
+  }
+
+  /* ─── Responsive ─────────────────────────────── */
+  @media (max-width: 600px) {
+    .header-inner   { grid-template-columns: 1fr; }
+    .container      { padding: 24px 18px 48px; }
+    .intro-inner    { padding: 14px 18px; }
+    .footer-inner   { flex-direction: column; align-items: flex-start; }
+    .footer-logo    { text-align: left; }
+    .item-head      { flex-wrap: wrap; }
+    .score-wrap     { order: -1; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ HEADER ═══════════════ -->
+<header class="header">
+  <div class="header-inner">
+    <div>
+      <p class="header-eyebrow">W/A Research &nbsp;·&nbsp; Weekly Briefing</p>
+      <h1 class="header-title">The Top Line<br>Weekly Briefing</h1>
+      <p class="header-sub">The ten most significant developments across K-12 &amp; higher education this week, curated by Whiteboard Advisors Research.</p>
+    </div>
+    <a href="https://whiteboardadvisors.wistia.com/medias/9ajjofduyg" target="_blank" class="video-btn">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="8" cy="8" r="7.25" stroke="white" stroke-width="1.5"/>
+        <path d="M6.5 5.5L11 8L6.5 10.5V5.5Z" fill="white"/>
+      </svg>
+      Watch Video Overview
+    </a>
+  </div>
+</header>
+
+<!-- ════════════ INTRO BAND ════════════ -->
+<div class="intro-band">
+  <div class="intro-inner">
+    <p>
+      <strong>You're reading a curated selection</strong> of the intelligence W/A Research is tracking this week. 
+      For the full dataset, trend maps, and interactive analysis, visit the 
+      <a href="https://prod-useast-a.online.tableau.com/t/whiteboardinsights/views/TheEducationTrendReport/TheTrendReport" target="_blank">Whiteboard Advisors Market Insights platform</a>. 
+      We look forward to speaking with you soon.
+    </p>
+    <span class="date-badge">Week of Mar 18, 2026</span>
+  </div>
+</div>
+
+<!-- ══════════════ MAIN ══════════════ -->
+<main class="container">
+
+  <div class="section-label">
+    <span class="section-label-text">10 items &nbsp;·&nbsp; Ranked by recency &nbsp;·&nbsp; All action scores = 3</span>
+    <div class="section-label-line"></div>
+  </div>
+
+  <!-- ── ITEM 1 ── US · Federal · Funding · Mar 18 ── -->
+  <article class="item priority">
+    <div class="item-head">
+      <div class="item-num">1</div>
+      <div class="item-meta-block">
+        <div class="item-tags">
+          <span class="tag tag-state">US / Federal</span>
+          <span class="tag tag-sector">Federal</span>
+          <span class="tag tag-issue">Funding</span>
+          <span class="tag tag-date">Mar 18, 2026</span>
+          <span class="tag tag-outlet">W/A Research</span>
+        </div>
+      </div>
+      <div class="score-wrap">
+        <span class="score-pill score-3">🔥 Action 3</span>
+      </div>
+    </div>
+    <div class="item-body">
+      <p class="item-headline">Top 5 K-12 Funding Disruptions of Trump's Second Term</p>
+      <p class="item-summary">
+        A W/A Research review of early second-term federal actions identifies the defining disruptions to K-12 finance: OMB's $6.2 billion formula fund withholding, ESSER reimbursement freezes, and a discretionary grant pause that created broad uncertainty. Department of Education staffing reductions and program shifts added further instability. Despite the turbulence, FY2026 appropriations ultimately preserved core funding — shifting the longer-term conversation toward structural challenges including enrollment decline and rising operating costs.
+      </p>
+    </div>
+    <div class="item-foot">
+      <span class="item-district">US — Federal Level</span>
+      <a href="https://whiteboardadvisors.com/top-5-k-12-funding-disruptions-of-trumps-second-term/?utm_source=wwr.whiteboardadvisors.com&utm_medium=newsletter&utm_campaign=what-we-re-reading-monday-march-16-2026&_bhlid=04468fa415abf433412cc91c324d0074a21a8653" target="_blank" class="read-link">
+        Read Full Analysis
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M6 2l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
+  </article>
+
+  <!-- ── ITEM 2 ── Wyoming · State · Budget · Mar 18 ── -->
+  <article class="item priority">
+    <div class="item-head">
+      <div class="item-num">2</div>
+      <div class="item-meta-block">
+        <div class="item-tags">
+          <span class="tag tag-state">Wyoming</span>
+          <span class="tag tag-sector">State</span>
+          <span class="tag tag-issue">Budget</span>
+          <span class="tag tag-date">Mar 18, 2026</span>
+          <span class="tag tag-outlet">WyoFile</span>
+        </div>
+      </div>
+      <div class="score-wrap">
+        <span class="score-pill score-3">🔥 Action 3</span>
+      </div>
+    </div>
+    <div class="item-body">
+      <p class="item-headline">Gov. Gordon Signs Wyoming's $11 Billion Two-Year Budget — With Two Dozen Vetoes</p>
+      <p class="item-summary">
+        Republican Governor Mark Gordon signed Wyoming's FY2027–28 budget into law while striking approximately two dozen provisions, largely on separation-of-powers and executive-authority grounds. The final plan closely mirrors the governor's priorities, includes employee raises, and preserves key programs. Some reductions — including the elimination of a summer food program — drew concern regarding impacts on vulnerable families.
+      </p>
+    </div>
+    <div class="item-foot">
+      <span class="item-district">Wyoming — State Level</span>
+      <a href="https://wyofile.com/gov-gordon-signs-wyomings-next-two-year-budget-while-vetoing-two-dozen-items/" target="_blank" class="read-link">
+        Read Full Story
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M6 2l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
+  </article>
+
+  <!-- ── ITEM 3 ── Washington · State · Budget · Mar 17 ── -->
+  <article class="item priority">
+    <div class="item-head">
+      <div class="item-num">3</div>
+      <div class="item-meta-block">
+        <div class="item-tags">
+          <span class="tag tag-state">Washington</span>
+          <span class="tag tag-sector">State</span>
+          <span class="tag tag-issue">Budget</span>
+          <span class="tag tag-date">Mar 17, 2026</span>
+          <span class="tag tag-outlet">Washington State Standard</span>
+        </div>
+      </div>
+      <div class="score-wrap">
+        <span class="score-pill score-3">🔥 Action 3</span>
+      </div>
+    </div>
+    <div class="item-body">
+      <p class="item-headline">Washington Democrats Settle on Plan to Patch $79.4 Billion Strained Budget</p>
+      <p class="item-summary">
+        Washington's budget framework includes targeted education reductions: Transition to Kindergarten funding is cut by $27 million — potentially eliminating up to one-third of seats — and a planned $100 per-student increase in local effort assistance has been canceled, saving $25 million. Higher education avoids deeper cuts through a $240 million fund transfer, though administrative cost reductions are required, reflecting a broad effort to close budget gaps while limiting the impact on schools.
+      </p>
+    </div>
+    <div class="item-foot">
+      <span class="item-district">Washington — State Level</span>
+      <a href="https://washingtonstatestandard.com/2026/03/11/democrats-settle-on-plan-for-patching-up-was-strained-budget/" target="_blank" class="read-link">
+        Read Full Story
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M6 2l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
+  </article>
+
+  <!-- ── ITEM 4 ── US · Federal · Administration · Mar 16 ── -->
+  <article class="item priority">
+    <div class="item-head">
+      <div class="item-num">4</div>
+      <div class="item-meta-block">
+        <div class="item-tags">
+          <span class="tag tag-state">US / Federal</span>
+          <span class="tag tag-sector">Federal</span>
+          <span class="tag tag-issue">Administration</span>
+          <span class="tag tag-date">Mar 16, 2026</span>
+          <span class="tag tag-outlet">Education Week</span>
+        </div>
+      </div>
+      <div class="score-wrap">
+        <span class="score-pill score-3">🔥 Action 3</span>
+      </div>
+    </div>
+    <div class="item-body">
+      <p class="item-headline">Has the Trump Administration Mostly Dismantled the Education Department — and Should You Care?</p>
+      <p class="item-summary">
+        EdWeek analysis argues that while the Department of Education's headcount has been cut roughly in half — from approximately 4,000 to 2,000 employees through DOGE-driven layoffs and buyouts — the practical impact on states and schools is less dramatic than partisans on either side suggest. The piece offers a measured assessment of real versus overstated changes, a useful frame for clients navigating federal policy uncertainty.
+      </p>
+    </div>
+    <div class="item-foot">
+      <span class="item-district">US — Federal Level</span>
+      <a href="https://www.edweek.org/policy-politics/opinion-the-trump-administration-has-mostly-dismantled-the-ed-dept-should-you-care/2026/03" target="_blank" class="read-link">
+        Read Full Story
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M6 2l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
+  </article>
+
+  <!-- ── ITEM 5 ── New York · State · Childcare · Mar 16 ── -->
+  <article class="item priority">
+    <div class="item-head">
+      <div class="item-num">5</div>
+      <div class="item-meta-block">
+        <div class="item-tags">
+          <span class="tag tag-state">New York</span>
+          <span class="tag tag-sector">State</span>
+          <span class="tag tag-issue">Childcare</span>
+          <span class="tag tag-date">Mar 16, 2026</span>
+          <span class="tag tag-outlet">NY Post</span>
+        </div>
+      </div>
+      <div class="score-wrap">
+        <span class="score-pill score-3">🔥 Action 3</span>
+      </div>
+    </div>
+    <div class="item-body">
+      <p class="item-headline">NYC's Universal Pre-K Expansion Is Destabilizing the Private Preschool Market</p>
+      <p class="item-summary">
+        Private childcare providers in New York report that the city's universal pre-K expansion is creating significant market disruption — forcing tuition increases of up to 20% and intensifying staffing competition with publicly funded programs. The dynamic illustrates a growing tension between universal early education goals and the private provider ecosystem, a pattern likely to surface in other major metros pursuing similar expansions.
+      </p>
+    </div>
+    <div class="item-foot">
+      <span class="item-district">New York — State Level</span>
+      <a href="https://nypost.com/2026/03/12/us-news/private-nyc-preschool-to-hike-tuition-by-20-blaming-destabilizing-free-pre-k-expansion/?utm_source=chatgpt.com" target="_blank" class="read-link">
+        Read Full Story
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M6 2l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
+  </article>
+
+  <!-- ── ITEM 6 ── Michigan · State · STEM · Mar 16 ── -->
+  <article class="item priority">
+    <div class="item-head">
+      <div class="item-num">6</div>
+      <div class="item-meta-block">
+        <div class="item-tags">
+          <span class="tag tag-state">Michigan</span>
+          <span class="tag tag-sector">State</span>
+          <span class="tag tag-issue">STEM</span>
+          <span class="tag tag-date">Mar 16, 2026</span>
+          <span class="tag tag-outlet">Michigan LEO</span>
+        </div>
+      </div>
+      <div class="score-wrap">
+        <span class="score-pill score-3">🔥 Action 3</span>
+      </div>
+    </div>
+    <div class="item-body">
+      <p class="item-headline">MiSTEM Launches $1.75M STEM Expansion Backed by General Motors</p>
+      <p class="item-summary">
+        Michigan's MiSTEM Network launched an expansion of its Playbook Mini Grant program, awarding $800,000 to 17 public education agencies to advance place-, project-, and problem-based STEM learning. A $1 million General Motors contribution anchors the initiative, which funds teacher training, student programming, and workforce-aligned partnerships — with a focus on underserved and rural communities and preparation for high-demand careers.
+      </p>
+    </div>
+    <div class="item-foot">
+      <span class="item-district">Michigan — State Level</span>
+      <a href="https://www.michigan.gov/leo/news/2026/03/09/mistem-launches-stem-expansion-to-advance-stem-education-statewide" target="_blank" class="read-link">
+        Read Full Story
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M6 2l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
+  </article>
+
+  <!-- ── ITEM 7 ── Michigan · State · Reading · Mar 16 ── -->
+  <article class="item priority">
+    <div class="item-head">
+      <div class="item-num">7</div>
+      <div class="item-meta-block">
+        <div class="item-tags">
+          <span class="tag tag-state">Michigan</span>
+          <span class="tag tag-sector">State</span>
+          <span class="tag tag-issue">Reading</span>
+          <span class="tag tag-date">Mar 16, 2026</span>
+          <span class="tag tag-outlet">Michigan Public</span>
+        </div>
+      </div>
+      <div class="score-wrap">
+        <span class="score-pill score-3">🔥 Action 3</span>
+      </div>
+    </div>
+    <div class="item-body">
+      <p class="item-headline">Michigan Officials Rally Support for Whitmer's $625M Statewide Literacy Investment</p>
+      <p class="item-summary">
+        Michigan education leaders are actively building legislative support for Governor Whitmer's proposed $625 million literacy initiative in the FY2027 budget. The funding would support new reading materials, high-impact tutoring, and statewide teacher training through the LETRS program. Lawmakers are weighing the proposal alongside accountability measures and broader reading policy changes as budget negotiations proceed.
+      </p>
+    </div>
+    <div class="item-foot">
+      <span class="item-district">Michigan — State Level</span>
+      <a href="https://www.michiganpublic.org/politics-government/2026-03-13/state-education-officials-gather-support-for-whitmers-literacy-plans" target="_blank" class="read-link">
+        Read Full Story
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M6 2l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
+  </article>
+
+  <!-- ── ITEM 8 ── US · Federal · Accountability · Mar 16 ── -->
+  <article class="item priority">
+    <div class="item-head">
+      <div class="item-num">8</div>
+      <div class="item-meta-block">
+        <div class="item-tags">
+          <span class="tag tag-state">US / Federal</span>
+          <span class="tag tag-sector">Federal</span>
+          <span class="tag tag-issue">Accountability</span>
+          <span class="tag tag-date">Mar 16, 2026</span>
+          <span class="tag tag-outlet">Education Week</span>
+        </div>
+      </div>
+      <div class="score-wrap">
+        <span class="score-pill score-3">🔥 Action 3</span>
+      </div>
+    </div>
+    <div class="item-body">
+      <p class="item-headline">Trump's Top K-12 Official: Devolving Education to States Is More Than Waiving Rules</p>
+      <p class="item-summary">
+        The administration's top K-12 official outlined a broader agenda than simple deregulation: shifting authority to states includes reconsidering how testing, accountability, and funding requirements function under ESSA, and giving states genuine responsibility for designing and running their own systems. The framing signals a more deliberate structural shift — not just administrative flexibility — with significant downstream implications for state policy and procurement.
+      </p>
+    </div>
+    <div class="item-foot">
+      <span class="item-district">US — Federal Level</span>
+      <a href="https://www.edweek.org/policy-politics/trumps-top-k-12-official-returning-ed-to-states-isnt-just-waiving-rules/2026/03" target="_blank" class="read-link">
+        Read Full Story
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M6 2l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
+  </article>
+
+  <!-- ── ITEM 9 ── Illinois · State · Childcare · Mar 12 ── -->
+  <article class="item priority">
+    <div class="item-head">
+      <div class="item-num">9</div>
+      <div class="item-meta-block">
+        <div class="item-tags">
+          <span class="tag tag-state">Illinois</span>
+          <span class="tag tag-sector">State</span>
+          <span class="tag tag-issue">Childcare</span>
+          <span class="tag tag-date">Mar 12, 2026</span>
+          <span class="tag tag-outlet">WQAD</span>
+        </div>
+      </div>
+      <div class="score-wrap">
+        <span class="score-pill score-3">🔥 Action 3</span>
+      </div>
+    </div>
+    <div class="item-body">
+      <p class="item-headline">$4.3M in Federal Funding Announced to Expand Early Head Start in Illinois Quad Cities</p>
+      <p class="item-summary">
+        SAL Family and Community Services will receive $4.3 million in federal funding to expand Early Head Start programs serving families across three Illinois counties in the Quad Cities region. The investment extends early childcare access for low-income families and signals continued federal investment in ECE infrastructure even amid broader federal spending constraints.
+      </p>
+    </div>
+    <div class="item-foot">
+      <span class="item-district">Illinois — State Level</span>
+      <a href="https://www.wqad.com/video/news/local/43m-in-federal-funding-announced-to-expand-early-head-start-child-care-programs-in-quad-cities/526-258d9a38-813d-4be9-8174-2e6e4f5a0621" target="_blank" class="read-link">
+        Read Full Story
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M6 2l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
+  </article>
+
+  <!-- ── ITEM 10 ── New Mexico · State · SPED · Mar 11 ── -->
+  <article class="item priority">
+    <div class="item-head">
+      <div class="item-num">10</div>
+      <div class="item-meta-block">
+        <div class="item-tags">
+          <span class="tag tag-state">New Mexico</span>
+          <span class="tag tag-sector">State</span>
+          <span class="tag tag-issue">SPED</span>
+          <span class="tag tag-date">Mar 11, 2026</span>
+          <span class="tag tag-outlet">Source NM</span>
+        </div>
+      </div>
+      <div class="score-wrap">
+        <span class="score-pill score-3">🔥 Action 3</span>
+      </div>
+    </div>
+    <div class="item-body">
+      <p class="item-headline">New Mexico Governor Signs Legislation Permanently Establishing Office of Special Education</p>
+      <p class="item-summary">
+        Senate Bill 64, signed by Governor Michelle Lujan Grisham, permanently establishes the Office of Special Education within the New Mexico Public Education Department and creates a statewide electronic IEP system. The system is designed to ensure students with disabilities can transition between districts without losing services — addressing a longstanding gap in continuity of support.
+      </p>
+    </div>
+    <div class="item-foot">
+      <span class="item-district">New Mexico — State Level</span>
+      <a href="https://sourcenm.com/2026/03/09/new-mexico-gov-michelle-lujan-grisham-signs-literacy-special-education-bills-into-law/" target="_blank" class="read-link">
+        Read Full Story
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M6 2l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
+  </article>
+
+</main>
+
+<!-- ══════════════ FOOTER ══════════════ -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-left">
+      <p>
+        <strong>Whiteboard Advisors Research</strong> &nbsp;·&nbsp; The Top Line Weekly Briefing &nbsp;·&nbsp; Week of March 18, 2026<br>
+        For the complete intelligence database, visit the 
+        <a href="https://prod-useast-a.online.tableau.com/t/whiteboardinsights/views/TheEducationTrendReport/TheTrendReport" target="_blank">W/A Market Insights platform</a>
+        &nbsp;·&nbsp;
+        <a href="https://whiteboardadvisors.wistia.com/medias/9ajjofduyg" target="_blank">▶ Watch this week's video overview</a><br>
+        <span style="font-size:10.5px;">Data: WA Insights Tracker · Compiled March 18, 2026 · Items shown are Flag=2 only, sorted by date descending.</span>
+      </p>
+    </div>
+    <div class="footer-logo">Whiteboard<br>Advisors</div>
+  </div>
+</footer>
+
+</body>
+</html>
