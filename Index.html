@@ -3,681 +3,510 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>W/A Research — The Top Line Weekly Briefing | March 2026</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
+<title>Whiteboard Advisors — Topline Intelligence Report</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,300;1,8..60,400&display=swap" rel="stylesheet" />
 <style>
   :root {
-    --navy:        #0B1F3A;
-    --navy-mid:    #122b52;
-    --navy-light:  #1a3a6b;
-    --blue:        #1B5EA8;
-    --blue-bright: #2478d4;
-    --silver:      #8A96A8;
-    --silver-lt:   #BEC7D4;
-    --fog:         #E8ECF2;
-    --white:       #FFFFFF;
-    --ink:         #1C2533;
-    --text:        #3D4756;
-    --accent:      #D4862A;
-    --accent-lt:   #FDF3E8;
-    --radius:      4px;
-    --max:         860px;
+    /* ── Whiteboard Advisors brand palette ── */
+    --hmh-pink:         #7B2D8B;
+    --hmh-orange:       #5C1A6E;
+    --hmh-accent:       #7B2D8B;
+    --hmh-accent-dark:  #4A1260;
+
+    /* Page structure — dark blue & gray */
+    --hmh-navy:         #0D1B2E;
+    --hmh-navy-mid:     #1A2E4A;
+    --hmh-navy-light:   #24405F;
+    --page-bg:          #C8D4E2;
+    --card-bg:          #F4F7FB;
+    --border-light:     #A8BAD0;
+    --text-primary:     #0D1B2E;
+    --text-secondary:   #1A2E4A;
+    --text-muted:       #5A6880;
+
+    /* TOC heat-shading: pink-to-orange scale */
+    /* 0 = gray, 1 = gray, 2 = yellow, 3+ = red (deepening) */
+    --hot-0-bg:   #DDE5F0;  --hot-0-border: #9AAFC8;  --hot-0-color: #4A5868;
+    --hot-1-bg:   #E8ECF2;  --hot-1-border: #A8B8CC;  --hot-1-color: #4A5868;
+    --hot-2-bg:   #FFF8CC;  --hot-2-border: #E8C800;  --hot-2-color: #7A6000;
+    --hot-3-bg:   #FFD0D0;  --hot-3-border: #E03030;  --hot-3-color: #8B0000;
+    --hot-4-bg:   #FFB0B0;  --hot-4-border: #CC1010;  --hot-4-color: #7A0000;
+    --hot-5-bg:   #FF8888;  --hot-5-border: #AA0000;  --hot-5-color: #600000;
   }
 
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  img { display: block; max-width: 100%; }
-  a   { color: var(--blue); text-decoration: none; }
-  a:hover { text-decoration: underline; }
-
+  html { scroll-behavior: smooth; }
+  #page-top { scroll-margin-top: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    font-family: 'Source Sans 3', sans-serif;
-    font-weight: 400;
-    color: var(--text);
-    background: var(--fog);
-    line-height: 1.65;
-  }
-
-  /* ── Header ── */
-  .header {
-    background: var(--navy);
-    border-bottom: 3px solid var(--blue);
-  }
-  .header-inner {
-    max-width: var(--max);
-    margin: 0 auto;
-    padding: 36px 32px 32px;
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 20px;
-    align-items: start;
-  }
-  .header-eyebrow {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 2.5px;
-    text-transform: uppercase;
-    color: var(--blue-bright);
-    margin-bottom: 8px;
-  }
-  .header-title {
-    font-family: 'Playfair Display', serif;
-    font-size: clamp(24px, 4vw, 36px);
-    font-weight: 700;
-    color: var(--white);
-    line-height: 1.2;
-    margin-bottom: 6px;
-  }
-  .header-sub {
-    font-size: 13px;
-    color: var(--silver-lt);
+    font-family: 'Source Serif 4', Georgia, serif;
     font-weight: 300;
-    letter-spacing: 0.3px;
-  }
-
-  /* ── Video button ── */
-  .video-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 9px;
-    padding: 10px 18px;
-    border: 1.5px solid rgba(255,255,255,0.25);
-    border-radius: var(--radius);
-    background: rgba(255,255,255,0.07);
-    color: var(--white);
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.4px;
-    white-space: nowrap;
-    transition: background 0.2s, border-color 0.2s;
-    text-decoration: none;
-  }
-  .video-btn:hover {
-    background: rgba(255,255,255,0.14);
-    border-color: rgba(255,255,255,0.5);
-    text-decoration: none;
-  }
-
-  /* ── Intro band ── */
-  .intro-band {
-    background: var(--navy-mid);
-    border-bottom: 1px solid rgba(255,255,255,0.08);
-  }
-  .intro-inner {
-    max-width: var(--max);
-    margin: 0 auto;
-    padding: 18px 32px;
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    flex-wrap: wrap;
-  }
-  .intro-inner p {
-    font-size: 13px;
-    color: var(--silver-lt);
-    font-weight: 300;
-    flex: 1;
-    min-width: 220px;
-  }
-  .intro-inner p strong { color: var(--white); font-weight: 600; }
-  .intro-inner a { color: #7bb8f5; text-decoration: underline; }
-
-  .date-badge {
-    font-size: 10.5px;
-    font-weight: 600;
-    letter-spacing: 1.8px;
-    text-transform: uppercase;
-    color: var(--silver);
-    background: var(--fog);
-    border: 1px solid var(--silver-lt);
-    border-radius: 2px;
-    padding: 3px 10px;
-    white-space: nowrap;
-  }
-
-  /* ── Container ── */
-  .container {
-    max-width: var(--max);
-    margin: 0 auto;
-    padding: 36px 32px 60px;
-  }
-
-  /* ── Section label ── */
-  .section-label {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 24px;
-  }
-  .section-label-line { flex: 1; height: 1px; background: var(--silver-lt); }
-  .section-label-text {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 2.2px;
-    text-transform: uppercase;
-    color: var(--silver);
-    white-space: nowrap;
-  }
-
-  /* ── Item cards ── */
-  .item {
-    background: var(--white);
-    border-radius: var(--radius);
-    border: 1px solid var(--silver-lt);
-    border-left: 3px solid var(--accent);
-    margin-bottom: 16px;
-    overflow: hidden;
-    transition: box-shadow 0.18s;
-    animation: fadeUp 0.4s ease both;
-  }
-  .item:hover { box-shadow: 0 6px 24px rgba(11,31,58,0.10); }
-
-  .item.warm { border-left-color: var(--blue); }
-
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(12px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  .item:nth-child(1) { animation-delay: 0.04s; }
-  .item:nth-child(2) { animation-delay: 0.08s; }
-  .item:nth-child(3) { animation-delay: 0.12s; }
-  .item:nth-child(4) { animation-delay: 0.16s; }
-  .item:nth-child(5) { animation-delay: 0.20s; }
-  .item:nth-child(6) { animation-delay: 0.24s; }
-  .item:nth-child(7) { animation-delay: 0.28s; }
-
-  /* ── Item head ── */
-  .item-head {
-    padding: 14px 20px 12px;
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    border-bottom: 1px solid var(--fog);
-  }
-  .item-num {
-    flex-shrink: 0;
-    width: 26px; height: 26px;
-    border-radius: 50%;
-    background: var(--navy);
-    color: var(--white);
-    font-size: 11px;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-top: 1px;
-  }
-  .item-meta-block { flex: 1; min-width: 0; }
-  .item-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 5px;
-    margin-bottom: 4px;
-  }
-  .tag {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.8px;
-    text-transform: uppercase;
-    padding: 2px 8px;
-    border-radius: 2px;
-    white-space: nowrap;
-  }
-  .tag-state  { background: var(--navy);       color: var(--white); }
-  .tag-sector { background: var(--navy-light);  color: var(--white); }
-  .tag-issue  { background: var(--blue);        color: var(--white); }
-  .tag-date   { background: var(--fog); color: var(--silver); border: 1px solid var(--silver-lt); }
-  .tag-outlet { background: var(--fog); color: var(--text); border: 1px solid var(--silver-lt); font-weight: 400; font-style: italic; letter-spacing: 0.2px; text-transform: none; }
-
-  .score-wrap { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-  .score-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 10.5px;
-    font-weight: 700;
-    padding: 3px 10px;
-    border-radius: 20px;
-    letter-spacing: 0.3px;
-    white-space: nowrap;
-  }
-  .score-3 { background: #FEF0E6; color: #A0440A; border: 1px solid #F5C8A0; }
-  .score-2 { background: #EDF4FF; color: #1B5EA8; border: 1px solid #AECDF5; }
-
-  /* ── Item body ── */
-  .item-body { padding: 14px 20px 12px; }
-  .item-headline {
-    font-family: 'Playfair Display', serif;
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--ink);
-    line-height: 1.35;
-    margin-bottom: 8px;
-  }
-  .item-summary {
-    font-size: 14px;
-    color: var(--text);
-    line-height: 1.68;
-    margin-bottom: 0;
-  }
-
-  /* ── Why it matters callout ── */
-  .why-matters {
-    margin-top: 10px;
-    padding: 9px 14px;
-    background: var(--accent-lt);
-    border-left: 3px solid var(--accent);
-    border-radius: 0 3px 3px 0;
-    font-size: 13px;
-    color: #7a4010;
-    line-height: 1.55;
-  }
-  .why-matters strong {
-    display: block;
-    font-size: 9.5px;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    color: var(--accent);
-    margin-bottom: 3px;
-    font-weight: 700;
-  }
-
-  /* ── Soundbyte link ── */
-  .soundbyte-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 10px;
-    font-size: 12px;
-    font-weight: 600;
-    color: #c0392b;
-    border: 1px solid #f0b8b0;
-    background: #fff5f4;
-    padding: 4px 12px;
-    border-radius: 3px;
-    text-decoration: none;
-    transition: background 0.15s;
-  }
-  .soundbyte-link:hover { background: #ffe8e6; text-decoration: none; }
-
-  /* ── Item foot ── */
-  .item-foot {
-    padding: 10px 20px;
-    background: var(--fog);
-    border-top: 1px solid var(--silver-lt);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
-  .item-district {
-    font-size: 11.5px;
-    color: var(--silver);
-    font-style: italic;
-  }
-  .read-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--blue);
-    white-space: nowrap;
-  }
-  .read-link:hover { color: var(--navy); text-decoration: none; }
-  .read-link svg { transition: transform 0.15s; }
-  .read-link:hover svg { transform: translateX(3px); }
-
-  /* ── Footer ── */
-  .footer {
-    background: var(--navy);
-    border-top: 2px solid var(--blue);
-  }
-  .footer-inner {
-    max-width: var(--max);
-    margin: 0 auto;
-    padding: 28px 32px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 20px;
-    flex-wrap: wrap;
-  }
-  .footer-left p {
-    font-size: 11.5px;
-    color: var(--silver);
+    background: var(--page-bg);
+    color: var(--text-primary);
     line-height: 1.7;
-  }
-  .footer-left p strong { color: var(--white); font-weight: 600; }
-  .footer-left a { color: #7bb8f5; }
-  .footer-logo {
-    font-family: 'Playfair Display', serif;
-    font-size: 13px;
-    color: rgba(255,255,255,0.3);
-    letter-spacing: 0.5px;
-    text-align: right;
-    font-style: italic;
-    flex-shrink: 0;
+    font-size: 15px;
   }
 
-  /* ── Responsive ── */
-  @media (max-width: 600px) {
-    .header-inner  { grid-template-columns: 1fr; }
-    .container     { padding: 24px 18px 48px; }
-    .intro-inner   { padding: 14px 18px; }
-    .footer-inner  { flex-direction: column; align-items: flex-start; }
-    .footer-logo   { text-align: left; }
-    .item-head     { flex-wrap: wrap; }
+  /* ── STATE TOC NAV ────────────────────────────────── */
+  .state-toc {
+    background: #DDE5F0;
+    border-bottom: 1px solid var(--border-light);
+    padding: 12px 48px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 12px rgba(13,27,46,0.08);
+  }
+  .toc-inner { max-width: 960px; margin: 0 auto; }
+  .toc-label {
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-weight: 700;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .toc-label::after { content: ''; flex: 1; height: 1px; background: #9AAFC8; }
+  .toc-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .toc-chip {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    padding: 3px 9px;
+    background: var(--hot-0-bg);
+    color: var(--hot-0-color);
+    text-decoration: none;
+    border: 1px solid var(--hot-0-border);
+    transition: all 0.15s;
+    font-family: 'Source Serif 4', serif;
+  }
+  .toc-chip:hover  { background: var(--hmh-navy); color: white; border-color: var(--hmh-navy); }
+  .toc-chip.active { background: var(--hmh-navy); color: white; border-color: var(--hmh-navy); }
+  .toc-chip.hot-0 { background: var(--hot-0-bg); border-color: var(--hot-0-border); color: var(--hot-0-color); }
+  .toc-chip.hot-1 { background: var(--hot-1-bg); border-color: var(--hot-1-border); color: var(--hot-1-color); }
+  .toc-chip.hot-2 { background: var(--hot-2-bg); border-color: var(--hot-2-border); color: var(--hot-2-color); }
+  .toc-chip.hot-3 { background: var(--hot-3-bg); border-color: var(--hot-3-border); color: var(--hot-3-color); }
+  .toc-chip.hot-4 { background: var(--hot-4-bg); border-color: var(--hot-4-border); color: var(--hot-4-color); }
+  .toc-chip.hot-5 { background: var(--hot-5-bg); border-color: var(--hot-5-border); color: var(--hot-5-color); font-weight: 800; }
+  .toc-chip.hot-0:hover,.toc-chip.hot-1:hover,.toc-chip.hot-2:hover,
+  .toc-chip.hot-3:hover,.toc-chip.hot-4:hover,.toc-chip.hot-5:hover {
+    background: var(--hmh-navy); color: white; border-color: var(--hmh-navy);
+  }
+
+  /* ── HEADER ──────────────────────────────────────── */
+  .memo-header {
+    background: linear-gradient(135deg, #0D1B2E 0%, #1A2E4A 55%, #0D1B2E 100%);
+    color: white;
+    padding: 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .memo-header::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(135deg, rgba(123,45,139,0.15) 0%, rgba(92,26,110,0.08) 70%, transparent 100%);
+    pointer-events: none;
+  }
+  .memo-header-inner {
+    position: relative; z-index: 1;
+    padding: 52px 64px 40px;
+    display: grid; grid-template-columns: 1fr auto;
+    align-items: start; gap: 32px;
+    border-bottom: 3px solid var(--hmh-accent);
+  }
+  .memo-brand { display: flex; align-items: center; gap: 16px; margin-bottom: 28px; }
+  .memo-logo-box {
+    background: linear-gradient(135deg, #3A3A3A 0%, #2A2A2A 50%, #1A1A1A 100%);
+    color: white;
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 22px;
+    letter-spacing: 0.08em;
+    padding: 10px 18px;
+    line-height: 1;
+    border: none;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.25);
+  }
+  .memo-brand-sub { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(255,255,255,0.5); font-weight: 300; }
+  .memo-title { font-family: 'Playfair Display', serif; font-size: 36px; font-weight: 700; line-height: 1.15; letter-spacing: -0.01em; color: white; margin-bottom: 8px; }
+  .memo-subtitle { font-size: 13px; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(253,230,150,0.85); font-weight: 400; margin-bottom: 32px; }
+  .memo-meta-grid { display: grid; grid-template-columns: 80px 1fr; gap: 6px 16px; font-size: 13.5px; color: rgba(255,255,255,0.85); font-weight: 300; }
+  .memo-meta-grid .label { color: rgba(253,230,150,0.9); font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; padding-top: 2px; font-weight: 600; }
+  .memo-meta-grid .val { border-bottom: 1px solid rgba(255,255,255,0.12); padding-bottom: 4px; margin-bottom: 2px; }
+  .memo-date-badge { text-align: right; color: rgba(255,255,255,0.35); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 4px; }
+  .confidential-stamp { display: inline-block; border: 1.5px solid rgba(253,230,150,0.4); color: rgba(253,230,150,0.7); font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase; padding: 3px 10px; font-weight: 600; margin-bottom: 16px; }
+
+  /* ── BODY ────────────────────────────────────────── */
+  .memo-body { max-width: 960px; margin: 0 auto; padding: 52px 48px 80px; }
+  .intro-block { background: #F4F7FB; border-left: 4px solid var(--hmh-accent); padding: 28px 32px; margin-bottom: 48px; box-shadow: 0 1px 8px rgba(13,27,46,0.07); }
+  .intro-block p { font-size: 15px; color: var(--text-secondary); margin-bottom: 12px; }
+  .intro-block p:last-child { margin-bottom: 0; }
+  .dashboard-link { display: inline-flex; align-items: center; gap: 8px; color: var(--hmh-accent-dark); text-decoration: none; font-weight: 600; font-size: 14px; border-bottom: 1px solid rgba(232,0,107,0.35); padding-bottom: 1px; transition: all 0.2s; }
+  .dashboard-link:hover { color: var(--hmh-accent); border-color: var(--hmh-accent); }
+  .dashboard-link::before { content: '→'; font-size: 16px; }
+
+  /* ── STATE SECTIONS ──────────────────────────────── */
+  .state-section { margin-bottom: 52px; scroll-margin-top: 80px; }
+  .state-header { display: flex; align-items: baseline; gap: 16px; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid var(--hmh-navy); }
+  .state-name { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 700; color: var(--hmh-navy); letter-spacing: -0.01em; }
+  .state-abbrev { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-muted); font-weight: 600; padding: 2px 8px; border: 1px solid var(--border-light); }
+  .state-count { margin-left: auto; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
+
+  /* ── ENTRY CARDS ─────────────────────────────────── */
+  .entry-card { background: var(--card-bg); border: 1px solid var(--border-light); margin-bottom: 16px; padding: 22px 26px; position: relative; transition: box-shadow 0.2s; }
+  .entry-card:hover { box-shadow: 0 4px 16px rgba(13,27,46,0.10); }
+  .entry-card.score3 { border-left: 4px solid var(--hmh-accent); background: #F3E8F9; }
+  .entry-card.score2 { border-left: 4px solid var(--hmh-navy); }
+  .entry-card.score1 { border-left: 4px solid #8AAABF; }
+  .entry-card.has-soundbyte { border-top: 3px solid #7B2D8B; }
+
+  /* ── W/A VIDEO CALLOUT ───────────────────────────── */
+  .wa-video-callout {
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(123,45,139,0.06);
+    border: 1px solid rgba(123,45,139,0.22);
+    border-left: 3px solid #7B2D8B;
+    padding: 8px 14px; margin-bottom: 14px;
+  }
+  .wa-video-callout-icon { font-size: 16px; flex-shrink: 0; }
+  .wa-video-callout-text { display: flex; flex-direction: column; gap: 3px; }
+  .wa-video-callout-label { font-size: 9px; letter-spacing: 0.2em; color: #7B2D8B; font-weight: 700; text-transform: uppercase; }
+  .wa-video-link { display: inline-flex; align-items: center; gap: 5px; color: #7B2D8B; text-decoration: none; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; border-bottom: 1px solid rgba(123,45,139,0.3); }
+  .wa-video-link:hover { border-color: #7B2D8B; }
+
+  /* ── META ROW ────────────────────────────────────── */
+  .entry-meta { display: flex; flex-wrap: wrap; gap: 6px 10px; margin-bottom: 10px; align-items: center; }
+  .meta-chip { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 600; padding: 2px 8px; background: #DDE5F0; color: var(--text-secondary); font-family: 'Source Serif 4', serif; }
+  .meta-chip.issue { background: var(--hmh-navy); color: white; }
+  .meta-chip.level { background: var(--hmh-navy-mid); color: white; }
+  .meta-chip.date  { background: transparent; color: var(--text-muted); border: 1px solid var(--border-light); }
+
+  /* Score pill tags */
+  .actionable-score { margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 11px; }
+  .score3-tag { color: #4A1260; background: #F3E8F9; padding: 2px 9px; border-radius: 10px; border: 1px solid var(--hmh-accent); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; }
+  .score2-tag { color: #0D1B2E; background: #C8D6E8; padding: 2px 9px; border-radius: 10px; border: 1px solid #8AAABF; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; }
+  .score1-tag { color: #4A5868; background: #DDE5F0; padding: 2px 9px; border-radius: 10px; border: 1px solid #B8C4D4; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; }
+
+  /* Budget direction tags */
+  .badgood-tag { padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; }
+  .badgood-1 { color: #8B1A1A; background: #FDECEA; border: 1px solid #F5A0A0; }
+  .badgood-2 { color: #7A5800; background: #FFF8E1; border: 1px solid #F5D870; }
+  .badgood-3 { color: #1A5C1A; background: #E8F5E8; border: 1px solid #80C880; }
+
+  /* Compact indicators */
+  .meta-indicator { display: inline-flex; align-items: center; justify-content: center; font-size: 11px; padding: 1px 5px; border-radius: 3px; font-style: normal; cursor: default; vertical-align: middle; }
+  .why-indicator { color: var(--hmh-accent-dark); background: rgba(253,185,19,0.1); border: 1px solid rgba(253,185,19,0.35); font-weight: 700; }
+
+  /* Card body */
+  .district-badge { font-size: 11px; color: var(--text-muted); margin-bottom: 8px; font-style: italic; }
+  .entry-content { font-size: 14.5px; color: var(--text-secondary); line-height: 1.72; }
+  .why-matters { font-weight: 600; color: var(--hmh-accent-dark); font-style: italic; margin-right: 4px; }
+  .source-link { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--hmh-accent-dark); text-decoration: none; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; margin-top: 8px; border-bottom: 1px solid rgba(232,0,107,0.25); }
+  .source-link:hover { border-color: var(--hmh-pink); }
+
+  /* HMH Alert box */
+  .hot-analysis { margin-top: 12px; padding: 12px 16px; background: rgba(123,45,139,0.04); border-left: 3px solid var(--hmh-accent); font-size: 13.5px; color: var(--hmh-navy); font-weight: 400; }
+  .hot-analysis::before { content: '📌 W/A Alert: '; font-weight: 700; color: var(--hmh-accent-dark); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; }
+
+  /* Section back-to-top */
+  .section-back-top { text-align: right; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border-light); }
+  .section-back-top a { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
+  .section-back-top a:hover { color: var(--hmh-accent-dark); }
+
+  /* ── STATS BAR ───────────────────────────────────── */
+  .stats-bar { display: flex; gap: 1px; margin-bottom: 48px; background: #9AAFC8; }
+  .stat-block { flex: 1; background: #F4F7FB; padding: 20px 24px; text-align: center; }
+  .stat-number { font-family: 'Playfair Display', serif; font-size: 36px; font-weight: 700; line-height: 1; margin-bottom: 4px; }
+  .stat-number.hot    { color: var(--hmh-accent-dark); }
+  .stat-number.total  { color: var(--hmh-navy); }
+  .stat-number.states { color: var(--hmh-navy-mid); }
+  .stat-label { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-muted); font-weight: 600; }
+  .top-issues-block { text-align: left; padding: 14px 24px; }
+  .top-issues-list  { display: flex; flex-direction: column; gap: 4px; }
+  .top-issue        { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+  .top-issue-rank   { font-family: 'Playfair Display', serif; font-weight: 700; font-size: 15px; color: var(--hmh-accent); width: 16px; text-align: center; }
+  .top-issue-name   { font-weight: 600; color: var(--text-primary); flex: 1; }
+  .top-issue-count  { font-family: 'Playfair Display', serif; font-weight: 700; font-size: 16px; color: var(--hmh-navy); }
+
+  .section-label { font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--hmh-accent-dark); font-weight: 700; margin-bottom: 32px; display: flex; align-items: center; gap: 12px; }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: #9AAFC8; }
+
+  /* ── FOOTER & AUTOMATION PANEL ───────────────────── */
+  .memo-footer { margin-top: 64px; padding-top: 24px; border-top: 2px solid var(--hmh-navy); display: flex; justify-content: space-between; align-items: center; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
+  .footer-brand { font-family: 'Playfair Display', serif; font-size: 14px; font-weight: 700; color: var(--hmh-accent-dark); text-transform: none; letter-spacing: 0; }
+  .automation-panel { background: var(--hmh-navy); border: 1px solid rgba(123,45,139,0.2); border-left: 4px solid var(--hmh-accent); padding: 14px 22px; margin-bottom: 28px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; font-size: 12px; }
+  .auto-label { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(255,200,220,0.8); font-weight: 700; white-space: nowrap; }
+  .auto-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: rgba(255,255,255,0.65); white-space: nowrap; }
+  .auto-badge strong { color: white; font-weight: 600; }
+  .auto-status { display: inline-flex; align-items: center; gap: 7px; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; padding: 4px 12px; }
+  .auto-status.active  { background: rgba(34,197,94,0.12); color: #4ADE80; border: 1px solid rgba(34,197,94,0.25); }
+  .auto-status.manual  { background: rgba(232,0,107,0.10); color: #E8006B; border: 1px solid rgba(232,0,107,0.3); }
+  .auto-status.pending { background: rgba(200,16,46,0.12);  color: #F87171; border: 1px solid rgba(200,16,46,0.25); }
+  .auto-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; background: currentColor; flex-shrink: 0; }
+  .auto-status.active .auto-dot { animation: pulse-dot 2s ease-in-out infinite; }
+  @keyframes pulse-dot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.7); } }
+  .auto-divider  { width: 1px; height: 22px; background: rgba(255,255,255,0.1); }
+  .auto-panel-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .auto-script-tag { font-family: 'Courier New', monospace; font-size: 10px; color: rgba(255,255,255,0.35); background: rgba(255,255,255,0.05); padding: 2px 8px; border: 1px solid rgba(255,255,255,0.08); white-space: nowrap; }
+
+  /* ── BACK TO TOP ─────────────────────────────────── */
+  .back-to-top { position: fixed; bottom: 28px; right: 28px; width: 40px; height: 40px; background: var(--hmh-navy); color: white; border: none; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s, background 0.2s; pointer-events: none; z-index: 99; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+  .back-to-top.visible { opacity: 1; pointer-events: auto; }
+  .back-to-top:hover { background: var(--hmh-pink); }
+
+  /* ── RESPONSIVE ──────────────────────────────────── */
+  @media (max-width: 700px) {
+    .memo-header-inner { padding: 32px 24px 28px; grid-template-columns: 1fr; }
+    .memo-title { font-size: 26px; }
+    .memo-body { padding: 32px 20px 60px; }
+    .stats-bar { flex-direction: column; }
+    .state-toc { padding: 10px 16px; }
+    .toc-chip { padding: 2px 6px; font-size: 9px; }
+    .automation-panel { flex-direction: column; align-items: flex-start; }
+    .auto-panel-right { margin-left: 0; }
+    .auto-divider { display: none; }
+  }
+  @media print {
+    .automation-panel, .state-toc, .back-to-top { display: none; }
+    body { background: white; font-size: 13px; }
+    .memo-body { padding: 24px 0; }
+    .entry-card { break-inside: avoid; }
+    .state-section { break-inside: avoid; }
   }
 </style>
 </head>
 <body>
 
-<!-- ══════════ HEADER ══════════ -->
-<header class="header">
-  <div class="header-inner">
+<div id="page-top"></div>
+
+<!-- HEADER -->
+<header class="memo-header">
+  <div class="memo-header-inner">
     <div>
-      <p class="header-eyebrow">W/A Research &nbsp;·&nbsp; Weekly Briefing</p>
-      <h1 class="header-title">The Top Line<br>Weekly Briefing</h1>
-      <p class="header-sub">The most significant developments across K–12 education this week, curated by Whiteboard Advisors Research.</p>
+      <div class="memo-brand">
+        <div class="memo-logo-box">W/A</div>
+        <div class="memo-brand-sub">Whiteboard Advisors</div>
+      </div>
+      <div class="confidential-stamp">Privileged &amp; Confidential</div>
+      <div class="memo-title">Market Intelligence<br/>Memorandum</div>
+      <div class="memo-subtitle">Education Policy Topline — Rolling 7-Day Intelligence Report</div>
+      <div class="memo-meta-grid">
+        <span class="label">To</span>
+        <span class="val">Whiteboard Advisors Client Team</span>
+        <span class="label">From</span>
+        <span class="val">Whiteboard Advisors — Market Intelligence Team</span>
+        <span class="label">Date</span>
+        <span class="val">March 30, 2026</span>
+        <span class="label">Re</span>
+        <span class="val">Actionable Education Policy Developments — March 21, 2026 – March 30, 2026</span>
+        <span class="label">Source</span>
+        <span class="val">Whiteboard Advisors Review and Analysis — Action Score: 3 (Actionable) | Rolling 7-Day Window</span>
+      </div>
     </div>
-    <a href="https://whiteboardadvisors.wistia.com/medias/9ajjofduyg" target="_blank" class="video-btn">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <circle cx="8" cy="8" r="7.25" stroke="white" stroke-width="1.5"/>
-        <path d="M6.5 5.5L11 8L6.5 10.5V5.5Z" fill="white"/>
-      </svg>
-      Watch Video Overview
-    </a>
+    <div class="memo-date-badge">March 30, 2026</div>
   </div>
 </header>
 
-<!-- ══════════ INTRO BAND ══════════ -->
-<div class="intro-band">
-  <div class="intro-inner">
-    <p>
-      <strong>You're reading a curated selection</strong> of the intelligence W/A Research is tracking this week.
-      For the full dataset, trend maps, and interactive analysis, visit the
-      <a href="https://prod-useast-a.online.tableau.com/t/whiteboardinsights/views/TheEducationTrendReport/TheTrendReport" target="_blank">Whiteboard Advisors Market Insights platform</a>.
-      We look forward to speaking with you soon.
+<!-- STATE QUICK-NAV -->
+<nav class="state-toc" id="state-nav">
+  <div class="toc-inner">
+    <div class="toc-label">Jump to State
+      <span style="font-weight:400;letter-spacing:0;text-transform:none;font-size:10px;color:var(--text-muted);">
+        — shading = # of 🔥 Actionable (Score 3) items:
+        <span style="background:var(--hot-0-bg);border:1px solid var(--hot-0-border);color:var(--hot-0-color);padding:0 5px;border-radius:2px;font-size:9px;font-weight:700;">0</span>
+        <span style="background:var(--hot-1-bg);border:1px solid var(--hot-1-border);color:var(--hot-1-color);padding:0 5px;border-radius:2px;font-size:9px;font-weight:700;">1</span>
+        <span style="background:var(--hot-2-bg);border:1px solid var(--hot-2-border);color:var(--hot-2-color);padding:0 5px;border-radius:2px;font-size:9px;font-weight:700;">2</span>
+        <span style="background:var(--hot-3-bg);border:1px solid var(--hot-3-border);color:var(--hot-3-color);padding:0 5px;border-radius:2px;font-size:9px;font-weight:700;">3+</span>
+      </span>
+    </div>
+    <!-- TOC:BEGIN -->
+    <div class="toc-chips"></div>
+    <!-- TOC:END -->
+  </div>
+</nav>
+
+<!-- MAIN BODY -->
+<main class="memo-body">
+
+  <div class="intro-block">
+    <p>This topline report presents the highest-signal education policy intelligence — <strong>Action Score 3 (Actionable)</strong> items only — drawn from <strong>Whiteboard Advisors Review and Analysis</strong> over the last 7 days. States are shaded by the number of actionable items. Entries are organized by state and issue area.</p>
+    <p>Items marked <strong>Budget</strong> or <strong>Finance</strong> also display a budget direction indicator: <span style="background:#FDECEA;border:1px solid #F5A0A0;color:#8B1A1A;padding:1px 6px;border-radius:8px;font-size:11px;font-weight:700;">📉 Declining</span> &nbsp;<span style="background:#FFF8E1;border:1px solid #F5D870;color:#7A5800;padding:1px 6px;border-radius:8px;font-size:11px;font-weight:700;">➡ Flat</span> &nbsp;<span style="background:#E8F5E8;border:1px solid #80C880;color:#1A5C1A;padding:1px 6px;border-radius:8px;font-size:11px;font-weight:700;">📈 Improving</span>. Items with 🎬 include linked Whiteboard Advisors video commentary.</p>
+    <p style="margin-top:16px;">
+      <a class="dashboard-link" href="https://whiteboardadvisors.wistia.com/medias/9ajjofduyg" target="_blank" style="font-size:15px;">
+        🎬 Watch the Weekly Video Overview
+      </a>
     </p>
-    <span class="date-badge">Week of Mar 19, 2026</span>
-  </div>
-</div>
-
-<!-- ══════════ MAIN ══════════ -->
-<main class="container">
-
-  <div class="section-label">
-    <span class="section-label-text">7 items &nbsp;·&nbsp; Ranked by recency &nbsp;·&nbsp; W/A Flagged coverage</span>
-    <div class="section-label-line"></div>
+    <p style="margin-top:12px;">
+      <a class="dashboard-link" href="https://prod-useast-a.online.tableau.com/t/whiteboardinsights/views/TheEducationTrendReport/TheTrendReport" target="_blank">
+        Whiteboard Advisors Market Insights — The Education Trend Report
+      </a>
+    </p>
   </div>
 
-  <!-- ── 1 · Kentucky · School Choice · Mar 19 ── -->
-  <article class="item">
-    <div class="item-head">
-      <div class="item-num">1</div>
-      <div class="item-meta-block">
-        <div class="item-tags">
-          <span class="tag tag-state">Kentucky</span>
-          <span class="tag tag-sector">State</span>
-          <span class="tag tag-issue">School Choice</span>
-          <span class="tag tag-date">Mar 19, 2026</span>
-          <span class="tag tag-outlet">WDRB</span>
-        </div>
-      </div>
-      <div class="score-wrap">
-        <span class="score-pill score-3">🔥 Action 3</span>
-      </div>
+  <!-- PYTHON:BEGIN_AUTOMATION_PANEL -->
+  <div class="automation-panel">
+    <span class="auto-label">Data Pipeline</span>
+    <div class="auto-divider"></div>
+    <div class="auto-badge">
+      <!-- PYTHON:LAST_GENERATED -->
+      📅 <strong>Latest Update:</strong> March 30, 2026
+      <!-- PYTHON:END_LAST_GENERATED -->
     </div>
-    <div class="item-body">
-      <p class="item-headline">Kentucky School Choice Bill Becomes Law After Senate Overrides Governor Veto</p>
-      <p class="item-summary">
-        House Bill 1 — which gives Kentucky families access to the federal Education Freedom Tax Credit program — became law after the Republican-controlled Senate voted to override Governor Andy Beshear's veto. The override follows a contentious multi-year debate: the state Supreme Court struck down a 2022 charter school funding measure in February, and voters rejected a 2024 ballot measure that would have allowed public dollars to flow to private schools. HB 1 sidesteps those constraints by routing access through a federal program.
-      </p>
-      <div class="why-matters">
-        <strong>W/A Perspective</strong>
-        The bottom line is that all states are going to join. If a governor doesn't, a resident can still contribute to an SGO in another state — so of course they will, after the politics play out.
-      </div>
+    <div class="auto-divider"></div>
+    <div class="auto-badge">
+      <!-- PYTHON:DATA_SOURCE -->
+      📂 <strong>Source:</strong> Whiteboard Advisors Review and Analysis
+      <!-- PYTHON:END_DATA_SOURCE -->
     </div>
-    <div class="item-foot">
-      <span class="item-district">Kentucky — State Level</span>
-      <a href="https://www.wdrb.com/news/politics/kentucky-school-choice-bill-set-to-become-law-after-senate-overrides-beshear-veto/article_3ac035ce-8acf-476c-b8cf-9e4073627df0.html?utm_source=wwr.whiteboardadvisors.com&utm_medium=newsletter&utm_campaign=what-we-re-reading-wednesday-march-18-2026&_bhlid=098d068e145f2c9e397687a05d9f0a9612dd358f" target="_blank" class="read-link">
-        Read Full Story
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M6 2l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </a>
+    <div class="auto-divider"></div>
+    <div class="auto-badge">
+      <!-- PYTHON:DATE_WINDOW -->
+      📆 <strong>Window:</strong> Rolling 7 days · latest item: March 30, 2026
+      <!-- PYTHON:END_DATE_WINDOW -->
     </div>
-  </article>
+    <div class="auto-divider"></div>
+    <div class="auto-badge">
+      <!-- PYTHON:ROW_COUNT -->
+      📊 <strong>Rows Processed:</strong> 2857 total → 168 qualifying
+      <!-- PYTHON:END_ROW_COUNT -->
+    </div>
+    <div class="auto-panel-right">
+      <!-- PYTHON:GENERATION_METHOD -->
+      <span class="auto-status active"><span class="auto-dot"></span> Daily Updates Active</span>
+      <!-- PYTHON:END_GENERATION_METHOD -->
+      <span class="auto-script-tag">update_from_sheets.py</span>
+    </div>
+  </div>
+  <!-- PYTHON:END_AUTOMATION_PANEL -->
 
-  <!-- ── 2 · US · Funding · Mar 18 ── -->
-  <article class="item">
-    <div class="item-head">
-      <div class="item-num">2</div>
-      <div class="item-meta-block">
-        <div class="item-tags">
-          <span class="tag tag-state">US / Federal</span>
-          <span class="tag tag-sector">Federal</span>
-          <span class="tag tag-issue">Funding</span>
-          <span class="tag tag-date">Mar 18, 2026</span>
-          <span class="tag tag-outlet">W/A Research</span>
-        </div>
+  <!-- SUMMARY STATS -->
+  <div class="stats-bar">
+    <div class="stat-block">
+      <div class="stat-number total">0</div>
+      <div class="stat-label">Total Actionable Items</div>
+    </div>
+    <div class="stat-block top-issues-block">
+      <div class="stat-label" style="margin-bottom:8px;">Top Issues This Period</div>
+      <!-- TOP_ISSUES:BEGIN -->
+      <div class="top-issues-list">
+        <div class="top-issue"><span class="top-issue-rank">1</span><span class="top-issue-name">Budget</span><span class="top-issue-count">3</span></div>
+        <div class="top-issue"><span class="top-issue-rank">2</span><span class="top-issue-name">Teachers</span><span class="top-issue-count">1</span></div>
+        <div class="top-issue"><span class="top-issue-rank">3</span><span class="top-issue-name">Childcare</span><span class="top-issue-count">1</span></div>
       </div>
-      <div class="score-wrap">
-        <span class="score-pill score-3">🔥 Action 3</span>
-      </div>
+      <!-- TOP_ISSUES:END -->
     </div>
-    <div class="item-body">
-      <p class="item-headline">Top 5 K–12 Funding Disruptions of Trump's Second Term</p>
-      <p class="item-summary">
-        A W/A Research review of early second-term federal actions identifies the defining disruptions to K–12 finance: OMB's $6.2 billion formula fund withholding, ESSER reimbursement freezes, and a discretionary grant pause that created broad uncertainty. Department of Education staffing reductions and program shifts added further instability. Despite the turbulence, FY2026 appropriations ultimately preserved core funding — shifting the longer-term conversation toward structural challenges including enrollment decline and rising operating costs.
-      </p>
+    <div class="stat-block">
+      <div class="stat-number states">0</div>
+      <div class="stat-label">States Represented</div>
     </div>
-    <div class="item-foot">
-      <span class="item-district">US — Federal Level</span>
-      <a href="https://whiteboardadvisors.com/top-5-k-12-funding-disruptions-of-trumps-second-term/?utm_source=wwr.whiteboardadvisors.com&utm_medium=newsletter&utm_campaign=what-we-re-reading-monday-march-16-2026&_bhlid=04468fa415abf433412cc91c324d0074a21a8653" target="_blank" class="read-link">
-        Read Full Analysis
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M6 2l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </a>
+    <div class="stat-block">
+      <div class="stat-number" style="color:var(--hmh-navy-mid);">7</div>
+      <div class="stat-label">Days Covered</div>
     </div>
-  </article>
+  </div>
 
-  <!-- ── 3 · Iowa · EdTech · Mar 17 ── -->
-  <article class="item warm">
-    <div class="item-head">
-      <div class="item-num">3</div>
-      <div class="item-meta-block">
-        <div class="item-tags">
-          <span class="tag tag-state">Iowa</span>
-          <span class="tag tag-sector">State</span>
-          <span class="tag tag-issue">EdTech</span>
-          <span class="tag tag-date">Mar 17, 2026</span>
-          <span class="tag tag-outlet">KIWA Radio</span>
-        </div>
-      </div>
-      <div class="score-wrap">
-        <span class="score-pill score-2">⚡ Action 2</span>
-      </div>
-    </div>
-    <div class="item-body">
-      <p class="item-headline">Iowa Bill Calls for Study of School EdTech Use — A Bellwether for the Nation</p>
-      <p class="item-summary">
-        Iowa lawmakers are advancing legislation to study the impact of school-issued technology on students' focus and learning. The Senate unanimously approved a proposal directing state education and health agencies to convene a working group of experts and parents and issue recommendations. The measure is positioned as a moderate alternative to a stricter House bill that would cap elementary classroom screen time — reflecting a growing national debate over how best to balance technology use in K–12 settings.
-      </p>
-      <div class="why-matters">
-        <strong>W/A Perspective</strong>
-        This is one of the hottest issues in education right now, and it's likely that most states will settle on a solution like the one Iowa is approaching.
-      </div>
-    </div>
-    <div class="item-foot">
-      <span class="item-district">Iowa — State Level</span>
-      <a href="https://kiwaradio.com/news/bill-calls-for-study-of-iowa-schools-use-of-ed-tech/" target="_blank" class="read-link">
-        Read Full Story
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M6 2l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </a>
-    </div>
-  </article>
+  <!-- HEATMAP:BEGIN -->
+  <!-- HEATMAP:END -->
 
-  <!-- ── 4 · California · Budget · Mar 17 ── -->
-  <article class="item">
-    <div class="item-head">
-      <div class="item-num">4</div>
-      <div class="item-meta-block">
-        <div class="item-tags">
-          <span class="tag tag-state">California</span>
-          <span class="tag tag-sector">District</span>
-          <span class="tag tag-issue">Budget</span>
-          <span class="tag tag-date">Mar 17, 2026</span>
-          <span class="tag tag-outlet">Oak Grove School District</span>
-        </div>
-      </div>
-      <div class="score-wrap">
-        <span class="score-pill score-3">🔥 Action 3</span>
-      </div>
-    </div>
-    <div class="item-body">
-      <p class="item-headline">California District Budget Forecast: Flat Revenues, Rising Costs, Persistent Deficits</p>
-      <p class="item-summary">
-        Oak Grove Elementary School District's board budget presentation is a template for what is happening across California right now. Revenues are largely flat near-term but projected to decline in outer years as one-time funds disappear and enrollment drops — each departing student representing roughly $13,000 in lost per-pupil funding. Expenditure growth in special education services, staffing, insurance, utilities, and negotiated salaries is producing deficits in the $10–12 million range, requiring ongoing reserve drawdowns to remain solvent.
-      </p>
-      <div class="why-matters">
-        <strong>W/A Perspective</strong>
-        Listen in on this board conversation about the budget and forecast. This conversation is happening across most districts in California right now.
-      </div>
-      <a href="https://fast.wistia.net/embed/iframe/fydcmblso7" target="_blank" class="soundbyte-link">
-        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5.75" stroke="#c0392b" stroke-width="1.4"/><path d="M5.2 4.5L9 6.5L5.2 8.5V4.5Z" fill="#c0392b"/></svg>
-        🎥 Watch Sound Bite
-      </a>
-    </div>
-    <div class="item-foot">
-      <span class="item-district">CA, Oak Grove Elementary</span>
-      <a href="https://youtu.be/L8PW7T6prXw" target="_blank" class="read-link">
-        Watch Board Presentation
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M6 2l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </a>
-    </div>
-  </article>
+  <!-- UPDATES:SECTION_LABEL -->
+  <div class="section-label">State-by-State Briefings</div>
+  <!-- UPDATES:END_SECTION_LABEL -->
 
-  <!-- ── 5 · Washington · Budget · Mar 17 ── -->
-  <article class="item">
-    <div class="item-head">
-      <div class="item-num">5</div>
-      <div class="item-meta-block">
-        <div class="item-tags">
-          <span class="tag tag-state">Washington</span>
-          <span class="tag tag-sector">District</span>
-          <span class="tag tag-issue">Budget</span>
-          <span class="tag tag-date">Mar 17, 2026</span>
-          <span class="tag tag-outlet">Peninsula School District</span>
-        </div>
-      </div>
-      <div class="score-wrap">
-        <span class="score-pill score-3">🔥 Action 3</span>
-      </div>
+  <!-- ════════════════════════════════════════
+       UPDATES INJECTION ZONE
+       - Everything between UPDATES:BEGIN and UPDATES:END
+         is fully replaced by update_from_sheets.py on each run.
+       - Filters: Bad-Good == 3, rolling last 10 days from Google Sheet.
+       - Do NOT manually edit content inside this block.
+  ════════════════════════════════════════ -->
+  <!-- UPDATES:BEGIN -->
+  <div class="entry-card score2">
+    <div class="entry-content" style="text-align:center;padding:32px;color:var(--text-muted);">
+      Awaiting first automated update.
     </div>
-    <div class="item-body">
-      <p class="item-headline">Washington State Funding Cuts Will Compress District Budgets Beginning 2026–27</p>
-      <p class="item-summary">
-        A Peninsula School District board update details the downstream impact of Washington SB 6260: the legislation cuts Transitional Kindergarten funding, reduces Running Start enrollment, freezes national board bonus cost-of-living adjustments, and changes transportation depreciation rules. Over the past decade, education's share of the state budget has declined from 52% to 42%. A board member summarized the sentiment: "The legislature had a chance to strengthen public education this year. Instead it cut support in key areas."
-      </p>
-      <div class="why-matters">
-        <strong>W/A Perspective</strong>
-        Sweeping Washington funding cuts beginning 2026–27 will compress district budgets. Prioritize ROI messaging and cost-sharing models now.
-      </div>
-    </div>
-    <div class="item-foot">
-      <span class="item-district">WA, Peninsula School District</span>
-      <a href="https://www.youtube.com/watch?v=tcpEvrWTmEA" target="_blank" class="read-link">
-        Watch Board Meeting
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M6 2l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </a>
-    </div>
-  </article>
+  </div>
+  <!-- UPDATES:END -->
 
-  <!-- ── 6 · Michigan · Reading · Mar 16 ── -->
-  <article class="item">
-    <div class="item-head">
-      <div class="item-num">6</div>
-      <div class="item-meta-block">
-        <div class="item-tags">
-          <span class="tag tag-state">Michigan</span>
-          <span class="tag tag-sector">State</span>
-          <span class="tag tag-issue">Reading</span>
-          <span class="tag tag-date">Mar 16, 2026</span>
-          <span class="tag tag-outlet">Michigan Public</span>
-        </div>
-      </div>
-      <div class="score-wrap">
-        <span class="score-pill score-3">🔥 Action 3</span>
-      </div>
-    </div>
-    <div class="item-body">
-      <p class="item-headline">Michigan Officials Rally Support for Whitmer's $625M Statewide Literacy Investment</p>
-      <p class="item-summary">
-        Michigan education leaders are actively building legislative support for Governor Whitmer's proposed $625 million literacy initiative in the FY2027 budget. The funding would support new reading materials, high-impact tutoring, and statewide teacher training through the LETRS program. Lawmakers are weighing the proposal alongside accountability measures and broader reading policy changes as budget negotiations continue.
-      </p>
-    </div>
-    <div class="item-foot">
-      <span class="item-district">Michigan — State Level</span>
-      <a href="https://www.michiganpublic.org/politics-government/2026-03-13/state-education-officials-gather-support-for-whitmers-literacy-plans" target="_blank" class="read-link">
-        Read Full Story
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M6 2l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </a>
-    </div>
-  </article>
-
-  <!-- ── 7 · Massachusetts · SPED · Mar 16 ── -->
-  <article class="item">
-    <div class="item-head">
-      <div class="item-num">7</div>
-      <div class="item-meta-block">
-        <div class="item-tags">
-          <span class="tag tag-state">Massachusetts</span>
-          <span class="tag tag-sector">State</span>
-          <span class="tag tag-issue">SPED</span>
-          <span class="tag tag-date">Mar 16, 2026</span>
-          <span class="tag tag-outlet">Boston Globe</span>
-        </div>
-      </div>
-      <div class="score-wrap">
-        <span class="score-pill score-3">🔥 Action 3</span>
-      </div>
-    </div>
-    <div class="item-body">
-      <p class="item-headline">Massachusetts Special Education Teachers Are Leaving in Droves — and the Crisis Is Spreading</p>
-      <p class="item-summary">
-        Massachusetts is facing a severe special education teacher shortage, with roughly one-third of instructors leaving their positions each year. Budget cuts, difficult working conditions, and a shrinking pipeline of new educators are driving the exodus. As the share of students with disabilities continues to rise, districts increasingly rely on underqualified or emergency-licensed staff, disrupting services and student progress. Experts warn the state is not meeting demand and call for urgent action on recruitment, training, and retention.
-      </p>
-      <div class="why-matters">
-        <strong>W/A Perspective</strong>
-        The importance of special education continues to rise, but the capacity to serve students continues to struggle. This is going to be an all-hands-on-deck matter very soon.
-      </div>
-    </div>
-    <div class="item-foot">
-      <span class="item-district">Massachusetts — State Level</span>
-      <a href="https://www.bostonglobe.com/2026/03/16/metro/massachusetts-special-education-teacher-shortage/" target="_blank" class="read-link">
-        Read Full Story
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M6 2l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </a>
-    </div>
-  </article>
+  <footer class="memo-footer">
+    <span class="footer-brand">Whiteboard Advisors</span>
+    <span>Whiteboard Advisors</span>
+    <span><div style="margin-top:4px;">March 30, 2026 · Confidential· Confidential</div></span>
+  </footer>
 
 </main>
 
-<!-- ══════════ FOOTER ══════════ -->
-<footer class="footer">
-  <div class="footer-inner">
-    <div class="footer-left">
-      <p>
-        <strong>Whiteboard Advisors Research</strong> &nbsp;·&nbsp; The Top Line Weekly Briefing &nbsp;·&nbsp; Week of March 19, 2026<br>
-        For the complete intelligence database, visit the
-        <a href="https://prod-useast-a.online.tableau.com/t/whiteboardinsights/views/TheEducationTrendReport/TheTrendReport" target="_blank">W/A Market Insights platform</a>
-        &nbsp;·&nbsp;
-        <a href="https://whiteboardadvisors.wistia.com/medias/9ajjofduyg" target="_blank">▶ Watch this week's video overview</a><br>
-        <span style="font-size:10.5px;color:#5a6a80;">Data: WA Insights Tracker · Compiled March 19, 2026 · Showing all Flag=2 items, sorted by date descending.</span>
-      </p>
-    </div>
-    <div class="footer-logo">Whiteboard<br>Advisors</div>
-  </div>
-</footer>
+<button class="back-to-top" id="backToTop" title="Back to top">↑</button>
 
+<script>
+/* PYTHON:BEGIN_SCRIPT_CONFIG */
+const MEMO_CONFIG = {
+  latestItemDate:   "2026-03-30",
+  reportingWindow:  "Rolling 10 days · latest item: March 30, 2026",
+  totalRowsRead:    2857,
+  qualifyingRows:   168,
+  dataSource:       "Whiteboard Advisors Review and Analysis",
+  generationMethod: "auto",
+};
+/* PYTHON:END_SCRIPT_CONFIG */
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.title = `W/A Topline Intelligence — ${MEMO_CONFIG.latestItemDate}`;
+
+  // Back-to-top button
+  const btn = document.getElementById('backToTop');
+  window.addEventListener('scroll', () => {
+    btn.classList.toggle('visible', window.scrollY > 600);
+  });
+  btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+  // Section back-to-top links
+  document.querySelectorAll('.back-to-top-link').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  });
+
+  // Highlight active state in TOC on scroll
+  const sections = document.querySelectorAll('.state-section');
+  const chips    = document.querySelectorAll('.toc-chip');
+  const chipMap  = {};
+  chips.forEach(c => { chipMap[c.getAttribute('href')] = c; });
+
+  let ticking = false;
+  window.addEventListener('scroll', () => {
+    if (!ticking) {
+      window.requestAnimationFrame(() => {
+        let current = '';
+        sections.forEach(sec => {
+          const rect = sec.getBoundingClientRect();
+          if (rect.top <= 120) current = '#' + sec.id;
+        });
+        chips.forEach(c => c.classList.remove('active'));
+        if (current && chipMap[current]) chipMap[current].classList.add('active');
+        ticking = false;
+      });
+      ticking = true;
+    }
+  });
+
+  // Status badge
+  const statusEl = document.querySelector(".auto-status");
+  if (statusEl) {
+    if (MEMO_CONFIG.generationMethod === "auto") {
+      statusEl.classList.remove("manual", "pending");
+      statusEl.classList.add("active");
+      statusEl.innerHTML = `<span class="auto-dot"></span> Daily Updates Active`;
+    } else {
+      statusEl.classList.remove("active", "pending");
+      statusEl.classList.add("manual");
+      statusEl.innerHTML = `<span class="auto-dot"></span> Manual Mode`;
+    }
+  }
+});
+</script>
 </body>
 </html>
