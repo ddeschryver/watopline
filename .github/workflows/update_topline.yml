@@ -1,0 +1,45 @@
+name: WA Topline Intelligence Auto-Update
+
+on:
+  schedule:
+    - cron: '0 09 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install gspread==6.1.2 oauth2client
+
+      - name: Write credentials file
+        env:
+          GOOGLE_CREDS: ${{ secrets.GOOGLE_CREDENTIALS }}
+        run: echo "$GOOGLE_CREDS" | base64 --decode > scripts/hmh-index-updates-d657b7e7e128.json
+
+      - name: Pull latest, run script, and push
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+          git fetch origin main
+          git reset --hard origin/main
+
+          python scripts/update_from_sheets.py
+
+          git add index.html
+          git diff --staged --quiet || git commit -m "WA Topline auto-update: $(date +%Y-%m-%d)"
+          git push origin main
