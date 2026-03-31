@@ -72,80 +72,6 @@ PANEL_MARKERS = {
     ),
 }
 
-# ── US HEX TILE MAP (col, row grid positions) ────────────────────────────────────
-# Compact hexagonal tile layout approximating US geography.
-# Grid: col 0-10 left-to-right, row 0-7 top-to-bottom.
-# Odd columns are offset down by half a hex height.
-STATE_HEX = {
-    "Alaska":         (0, 0),
-    "Maine":          (10, 0),
-    "Wisconsin":      (6, 0),
-    "Vermont":        (9, 0),
-    "New Hampshire":  (10, 1),
-    "Washington":     (1, 0),
-    "Idaho":          (2, 1),
-    "Montana":        (2, 0),
-    "North Dakota":   (3, 0),
-    "Minnesota":      (4, 0),
-    "Michigan":       (7, 0),
-    "New York":       (8, 0),
-    "Massachusetts":  (9, 1),
-    "Oregon":         (1, 1),
-    "Wyoming":        (3, 1),
-    "South Dakota":   (4, 1),
-    "Iowa":           (5, 1),
-    "Illinois":       (6, 1),
-    "Indiana":        (7, 1),
-    "Ohio":           (8, 1),
-    "Pennsylvania":   (8, 2),
-    "Connecticut":    (9, 2),
-    "Rhode Island":   (10, 2),
-    "Nevada":         (1, 2),
-    "Utah":           (2, 2),
-    "Colorado":       (3, 2),
-    "Nebraska":       (4, 2),
-    "Missouri":       (5, 2),
-    "Kentucky":       (6, 2),
-    "West Virginia":  (7, 2),
-    "Virginia":       (7, 3),
-    "New Jersey":     (9, 3),
-    "Delaware":       (10, 3),
-    "California":     (0, 3),
-    "Arizona":        (2, 3),
-    "New Mexico":     (3, 3),
-    "Kansas":         (4, 3),
-    "Arkansas":       (5, 3),
-    "Tennessee":      (6, 3),
-    "North Carolina": (7, 4),
-    "Maryland":       (8, 3),
-    "DC":             (8, 4),
-    "South Carolina": (7, 5),
-    "Oklahoma":       (4, 4),
-    "Louisiana":      (5, 5),
-    "Mississippi":    (6, 4),
-    "Alabama":        (6, 5),
-    "Georgia":        (7, 6),
-    "Texas":          (3, 4),
-    "Florida":        (8, 5),
-    "Hawaii":         (0, 6),
-}
-
-# Abbreviation lookup
-STATE_ABBREV = {
-    "Alabama": "AL", "Alaska": "AK", "Arizona": "AZ", "Arkansas": "AR",
-    "California": "CA", "Colorado": "CO", "Connecticut": "CT", "DC": "DC",
-    "Delaware": "DE", "Florida": "FL", "Georgia": "GA", "Hawaii": "HI",
-    "Idaho": "ID", "Illinois": "IL", "Indiana": "IN", "Iowa": "IA",
-    "Kansas": "KS", "Kentucky": "KY", "Louisiana": "LA", "Maine": "ME",
-    "Maryland": "MD", "Massachusetts": "MA", "Michigan": "MI", "Minnesota": "MN",
-    "Mississippi": "MS", "Missouri": "MO", "Montana": "MT", "Nebraska": "NE",
-    "Nevada": "NV", "New Hampshire": "NH", "New Jersey": "NJ", "New Mexico": "NM",
-    "New York": "NY", "North Carolina": "NC", "North Dakota": "ND", "Ohio": "OH",
-    "Oklahoma": "OK", "Oregon": "OR", "Pennsylvania": "PA", "Rhode Island": "RI",
-    "South Carolina": "SC", "South Dakota": "SD", "Tennessee": "TN", "Texas": "TX",
-    "US": "US", "Utah": "UT", "Vermont": "VT", "Virginia": "VA",
-    "Washington": "WA", "West Virginia": "WV", "Wisconsin": "WI", "Wyoming": "WY",
-}
 
 
 # ── STEP 1: AUTHENTICATE & FETCH ─────────────────────────────────────────────────
@@ -406,15 +332,6 @@ def heat_class(n):
     return "hot-3"
 
 
-def heat_fill(n):
-    """Map count of Score-3 items to an SVG fill color."""
-    if n == 0: return "#DDE5F0"
-    if n == 1: return "#E8ECF2"
-    if n == 2: return "#FFF8CC"
-    if n == 3: return "#FFD0D0"
-    if n == 4: return "#FFB0B0"
-    return "#FF8888"
-
 
 # ── BUILD TOC CHIPS ──────────────────────────────────────────────────────────────
 
@@ -449,99 +366,6 @@ def build_top_issues_html(updates):
         )
     return '<div class="top-issues-list">\n' + "\n".join(rows) + '\n      </div>'
 
-
-# ── BUILD SVG HEAT MAP ───────────────────────────────────────────────────────────
-
-def build_svg_map(state_info):
-    """Generate a compact hex tile map of the US, colored by Score-3 density."""
-    import math
-
-    # Hex geometry — flat-topped hexagons
-    R = 22          # circumradius (center to vertex)
-    W = R * 2       # width of flat-topped hex
-    H = R * math.sqrt(3)  # height
-    GAP = 2         # gap between hexes
-    col_step = (W + GAP) * 0.75  # horizontal spacing (3/4 width for flat-top tessellation)
-    row_step = H + GAP           # vertical spacing
-
-    # Precompute flat-topped hex vertex offsets
-    angles = [math.radians(60 * i) for i in range(6)]
-    hex_verts = [(R * math.cos(a), R * math.sin(a)) for a in angles]
-
-    def hex_points(cx, cy):
-        return " ".join(f"{cx + vx:.1f},{cy + vy:.1f}" for vx, vy in hex_verts)
-
-    hexes = []
-    labels = []
-    padding = 30
-
-    for state_name, (col, row) in STATE_HEX.items():
-        cx = padding + col * col_step
-        cy = padding + row * row_step
-        # Odd columns offset down by half a row
-        if col % 2 == 1:
-            cy += row_step / 2
-
-        abbrev = STATE_ABBREV.get(state_name, state_name[:2].upper())
-        info = state_info.get(state_name)
-
-        if info:
-            fill  = heat_fill(info["hot3"])
-            stroke = "#5A6880"
-            title = f"{state_name}: {info['total']} items, {info['hot3']} actionable"
-            text_fill = "#0D1B2E"
-            font_weight = "800" if info["hot3"] > 0 else "600"
-        else:
-            fill  = "#EDF1F7"
-            stroke = "#C0CCDB"
-            title = f"{state_name}: no items"
-            text_fill = "#8899AA"
-            font_weight = "600"
-
-        pts = hex_points(cx, cy)
-        hexes.append(
-            f'    <polygon points="{pts}" fill="{fill}" stroke="{stroke}" '
-            f'stroke-width="1.2"><title>{escape(title)}</title></polygon>'
-        )
-        labels.append(
-            f'    <text x="{cx:.1f}" y="{cy + 1:.1f}" '
-            f'font-size="8" font-weight="{font_weight}" fill="{text_fill}" '
-            f'text-anchor="middle" dominant-baseline="central" '
-            f'font-family="Source Serif 4, serif" '
-            f'style="pointer-events:none;">{escape(abbrev)}</text>'
-        )
-
-    # Compute viewBox from content
-    all_cols = [c for c, r in STATE_HEX.values()]
-    all_rows = [r for c, r in STATE_HEX.values()]
-    max_x = padding + max(all_cols) * col_step + R + 10
-    max_y = padding + (max(all_rows) + 1) * row_step + R + 30  # room for legend
-
-    # Legend
-    legend_y = max_y - 18
-    legend_items = [
-        ("#EDF1F7", "No data"),
-        ("#DDE5F0", "Active"),
-        ("#FFF8CC", "1–2 🔥"),
-        ("#FFD0D0", "3 🔥"),
-        ("#FF8888", "5+ 🔥"),
-    ]
-    legend = []
-    for i, (color, label) in enumerate(legend_items):
-        lx = padding + i * 80
-        legend.append(f'    <rect x="{lx}" y="{legend_y}" width="11" height="11" fill="{color}" stroke="#9AAFC8" stroke-width="0.5" rx="2"/>')
-        legend.append(f'    <text x="{lx + 15}" y="{legend_y + 9}" font-size="9" fill="#5A6880" font-family="Source Serif 4, serif">{label}</text>')
-
-    svg_lines = [
-        f'<svg viewBox="0 0 {max_x:.0f} {max_y:.0f}" xmlns="http://www.w3.org/2000/svg" '
-        f'style="width:100%;max-width:480px;height:auto;display:block;margin:0 auto 24px;">',
-        '  <g>',
-    ] + hexes + labels + [
-        '  </g>',
-    ] + legend + [
-        '</svg>',
-    ]
-    return "\n".join(svg_lines)
 
 
 # ── INJECTION FUNCTIONS ──────────────────────────────────────────────────────────
@@ -649,7 +473,6 @@ def main():
     updates_html    = build_updates_html(updates)
     toc_html        = build_toc_html(state_info)
     top_issues_html = build_top_issues_html(updates)
-    svg_map_html    = build_svg_map(state_info)
     print(f"  ✓ {len(updates)} cards | {hot_count} high-heat | {state_count} states")
 
     print(f"\n[4] Reading {INDEX_HTML}...")
@@ -662,7 +485,6 @@ def main():
     html = inject_between(html, MARKER_BEGIN, MARKER_END, updates_html)
     html = inject_between(html, "<!-- TOC:BEGIN -->", "<!-- TOC:END -->", toc_html)
     html = inject_between(html, "<!-- TOP_ISSUES:BEGIN -->", "<!-- TOP_ISSUES:END -->", "      " + top_issues_html)
-    html = inject_between(html, "<!-- HEATMAP:BEGIN -->", "<!-- HEATMAP:END -->", svg_map_html)
 
     print("\n[6] Updating dates and stats...")
     html = update_static_dates(html, latest_display, cutoff_display, len(updates), hot_count, state_count)
