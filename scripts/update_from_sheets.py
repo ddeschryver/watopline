@@ -72,62 +72,79 @@ PANEL_MARKERS = {
     ),
 }
 
-# ── US STATE SVG PATHS (simplified borders) ──────────────────────────────────────
-# Keyed by state name → {"abbrev", "path", "tx", "ty"} for label placement
-# These are simplified path outlines for a 960×600 US map projection
-STATE_GEO = {
-    "Alabama":        {"abbrev": "AL", "path": "M628,396 L628,440 L620,453 L613,452 L611,396 Z", "tx": 620, "ty": 425},
-    "Alaska":         {"abbrev": "AK", "path": "M161,485 L195,485 L195,510 L161,510 Z", "tx": 178, "ty": 500},
-    "Arizona":        {"abbrev": "AZ", "path": "M222,378 L278,378 L278,438 L222,438 Z", "tx": 250, "ty": 410},
-    "Arkansas":       {"abbrev": "AR", "path": "M557,393 L601,393 L601,432 L557,432 Z", "tx": 579, "ty": 413},
-    "California":     {"abbrev": "CA", "path": "M138,280 L178,280 L190,380 L155,430 L138,380 Z", "tx": 155, "ty": 350},
-    "Colorado":       {"abbrev": "CO", "path": "M300,300 L378,300 L378,350 L300,350 Z", "tx": 339, "ty": 327},
-    "Connecticut":    {"abbrev": "CT", "path": "M808,225 L830,225 L830,242 L808,242 Z", "tx": 819, "ty": 234},
-    "DC":             {"abbrev": "DC", "path": "M755,300 L765,300 L765,310 L755,310 Z", "tx": 760, "ty": 306},
-    "Delaware":       {"abbrev": "DE", "path": "M775,290 L790,290 L790,315 L775,315 Z", "tx": 782, "ty": 303},
-    "Florida":        {"abbrev": "FL", "path": "M642,455 L700,440 L715,490 L680,520 L645,490 Z", "tx": 678, "ty": 475},
-    "Georgia":        {"abbrev": "GA", "path": "M645,396 L690,396 L690,453 L645,453 Z", "tx": 667, "ty": 425},
-    "Hawaii":         {"abbrev": "HI", "path": "M260,490 L290,490 L290,515 L260,515 Z", "tx": 275, "ty": 503},
-    "Idaho":          {"abbrev": "ID", "path": "M225,170 L265,170 L265,270 L225,270 Z", "tx": 245, "ty": 225},
-    "Illinois":       {"abbrev": "IL", "path": "M578,268 L608,268 L608,348 L578,348 Z", "tx": 593, "ty": 310},
-    "Indiana":        {"abbrev": "IN", "path": "M618,275 L648,275 L648,345 L618,345 Z", "tx": 633, "ty": 312},
-    "Iowa":           {"abbrev": "IA", "path": "M508,250 L575,250 L575,296 L508,296 Z", "tx": 541, "ty": 275},
-    "Kansas":         {"abbrev": "KS", "path": "M420,330 L510,330 L510,370 L420,370 Z", "tx": 465, "ty": 352},
-    "Kentucky":       {"abbrev": "KY", "path": "M630,340 L720,330 L720,365 L630,370 Z", "tx": 675, "ty": 350},
-    "Louisiana":      {"abbrev": "LA", "path": "M557,440 L608,440 L608,490 L557,490 Z", "tx": 582, "ty": 465},
-    "Maine":          {"abbrev": "ME", "path": "M830,135 L860,135 L860,200 L830,200 Z", "tx": 845, "ty": 168},
-    "Maryland":       {"abbrev": "MD", "path": "M730,290 L775,280 L775,305 L730,310 Z", "tx": 752, "ty": 296},
-    "Massachusetts":  {"abbrev": "MA", "path": "M808,210 L850,210 L850,225 L808,225 Z", "tx": 829, "ty": 218},
-    "Michigan":       {"abbrev": "MI", "path": "M598,185 L660,185 L660,270 L598,270 Z", "tx": 635, "ty": 235},
-    "Minnesota":      {"abbrev": "MN", "path": "M488,150 L548,150 L548,240 L488,240 Z", "tx": 518, "ty": 200},
-    "Mississippi":    {"abbrev": "MS", "path": "M592,400 L618,400 L618,465 L592,465 Z", "tx": 605, "ty": 433},
-    "Missouri":       {"abbrev": "MO", "path": "M520,310 L580,310 L580,385 L520,385 Z", "tx": 550, "ty": 348},
-    "Montana":        {"abbrev": "MT", "path": "M270,130 L385,130 L385,195 L270,195 Z", "tx": 327, "ty": 165},
-    "Nebraska":       {"abbrev": "NE", "path": "M390,275 L498,275 L498,315 L390,315 Z", "tx": 444, "ty": 297},
-    "Nevada":         {"abbrev": "NV", "path": "M185,250 L230,250 L222,378 L185,378 Z", "tx": 205, "ty": 318},
-    "New Hampshire":  {"abbrev": "NH", "path": "M825,165 L840,165 L840,210 L825,210 Z", "tx": 832, "ty": 190},
-    "New Jersey":     {"abbrev": "NJ", "path": "M785,250 L802,250 L802,300 L785,300 Z", "tx": 793, "ty": 276},
-    "New Mexico":     {"abbrev": "NM", "path": "M278,370 L345,370 L345,445 L278,445 Z", "tx": 311, "ty": 410},
-    "New York":       {"abbrev": "NY", "path": "M740,185 L820,185 L820,250 L740,250 Z", "tx": 780, "ty": 220},
-    "North Carolina": {"abbrev": "NC", "path": "M665,355 L775,345 L775,375 L665,385 Z", "tx": 720, "ty": 365},
-    "North Dakota":   {"abbrev": "ND", "path": "M400,145 L488,145 L488,195 L400,195 Z", "tx": 444, "ty": 172},
-    "Ohio":           {"abbrev": "OH", "path": "M660,265 L720,265 L720,330 L660,330 Z", "tx": 690, "ty": 300},
-    "Oklahoma":       {"abbrev": "OK", "path": "M400,375 L520,370 L520,408 L400,412 Z", "tx": 465, "ty": 392},
-    "Oregon":         {"abbrev": "OR", "path": "M140,165 L225,165 L225,230 L140,230 Z", "tx": 182, "ty": 200},
-    "Pennsylvania":   {"abbrev": "PA", "path": "M720,245 L790,245 L790,280 L720,280 Z", "tx": 755, "ty": 264},
-    "Rhode Island":   {"abbrev": "RI", "path": "M830,228 L845,228 L845,242 L830,242 Z", "tx": 837, "ty": 236},
-    "South Carolina": {"abbrev": "SC", "path": "M680,380 L735,370 L735,410 L680,415 Z", "tx": 707, "ty": 392},
-    "South Dakota":   {"abbrev": "SD", "path": "M400,200 L488,200 L488,255 L400,255 Z", "tx": 444, "ty": 230},
-    "Tennessee":      {"abbrev": "TN", "path": "M590,365 L710,355 L710,385 L590,392 Z", "tx": 650, "ty": 374},
-    "Texas":          {"abbrev": "TX", "path": "M370,410 L520,408 L530,510 L430,520 L370,470 Z", "tx": 460, "ty": 460},
-    "US":             {"abbrev": "US", "path": "", "tx": 0, "ty": 0},
-    "Utah":           {"abbrev": "UT", "path": "M248,268 L300,268 L300,358 L248,358 Z", "tx": 274, "ty": 315},
-    "Vermont":        {"abbrev": "VT", "path": "M810,165 L825,165 L825,210 L810,210 Z", "tx": 817, "ty": 190},
-    "Virginia":       {"abbrev": "VA", "path": "M680,320 L775,305 L775,350 L680,360 Z", "tx": 730, "ty": 335},
-    "Washington":     {"abbrev": "WA", "path": "M150,110 L230,110 L230,170 L150,170 Z", "tx": 190, "ty": 143},
-    "West Virginia":  {"abbrev": "WV", "path": "M700,300 L740,290 L740,340 L700,340 Z", "tx": 720, "ty": 320},
-    "Wisconsin":      {"abbrev": "WI", "path": "M548,180 L600,180 L600,260 L548,260 Z", "tx": 574, "ty": 222},
-    "Wyoming":        {"abbrev": "WY", "path": "M290,200 L370,200 L370,260 L290,260 Z", "tx": 330, "ty": 232},
+# ── US HEX TILE MAP (col, row grid positions) ────────────────────────────────────
+# Compact hexagonal tile layout approximating US geography.
+# Grid: col 0-10 left-to-right, row 0-7 top-to-bottom.
+# Odd columns are offset down by half a hex height.
+STATE_HEX = {
+    "Alaska":         (0, 0),
+    "Maine":          (10, 0),
+    "Wisconsin":      (6, 0),
+    "Vermont":        (9, 0),
+    "New Hampshire":  (10, 1),
+    "Washington":     (1, 0),
+    "Idaho":          (2, 1),
+    "Montana":        (2, 0),
+    "North Dakota":   (3, 0),
+    "Minnesota":      (4, 0),
+    "Michigan":       (7, 0),
+    "New York":       (8, 0),
+    "Massachusetts":  (9, 1),
+    "Oregon":         (1, 1),
+    "Wyoming":        (3, 1),
+    "South Dakota":   (4, 1),
+    "Iowa":           (5, 1),
+    "Illinois":       (6, 1),
+    "Indiana":        (7, 1),
+    "Ohio":           (8, 1),
+    "Pennsylvania":   (8, 2),
+    "Connecticut":    (9, 2),
+    "Rhode Island":   (10, 2),
+    "Nevada":         (1, 2),
+    "Utah":           (2, 2),
+    "Colorado":       (3, 2),
+    "Nebraska":       (4, 2),
+    "Missouri":       (5, 2),
+    "Kentucky":       (6, 2),
+    "West Virginia":  (7, 2),
+    "Virginia":       (7, 3),
+    "New Jersey":     (9, 3),
+    "Delaware":       (10, 3),
+    "California":     (0, 3),
+    "Arizona":        (2, 3),
+    "New Mexico":     (3, 3),
+    "Kansas":         (4, 3),
+    "Arkansas":       (5, 3),
+    "Tennessee":      (6, 3),
+    "North Carolina": (7, 4),
+    "Maryland":       (8, 3),
+    "DC":             (8, 4),
+    "South Carolina": (7, 5),
+    "Oklahoma":       (4, 4),
+    "Louisiana":      (5, 5),
+    "Mississippi":    (6, 4),
+    "Alabama":        (6, 5),
+    "Georgia":        (7, 6),
+    "Texas":          (3, 4),
+    "Florida":        (8, 5),
+    "Hawaii":         (0, 6),
+}
+
+# Abbreviation lookup
+STATE_ABBREV = {
+    "Alabama": "AL", "Alaska": "AK", "Arizona": "AZ", "Arkansas": "AR",
+    "California": "CA", "Colorado": "CO", "Connecticut": "CT", "DC": "DC",
+    "Delaware": "DE", "Florida": "FL", "Georgia": "GA", "Hawaii": "HI",
+    "Idaho": "ID", "Illinois": "IL", "Indiana": "IN", "Iowa": "IA",
+    "Kansas": "KS", "Kentucky": "KY", "Louisiana": "LA", "Maine": "ME",
+    "Maryland": "MD", "Massachusetts": "MA", "Michigan": "MI", "Minnesota": "MN",
+    "Mississippi": "MS", "Missouri": "MO", "Montana": "MT", "Nebraska": "NE",
+    "Nevada": "NV", "New Hampshire": "NH", "New Jersey": "NJ", "New Mexico": "NM",
+    "New York": "NY", "North Carolina": "NC", "North Dakota": "ND", "Ohio": "OH",
+    "Oklahoma": "OK", "Oregon": "OR", "Pennsylvania": "PA", "Rhode Island": "RI",
+    "South Carolina": "SC", "South Dakota": "SD", "Tennessee": "TN", "Texas": "TX",
+    "US": "US", "Utah": "UT", "Vermont": "VT", "Virginia": "VA",
+    "Washington": "WA", "West Virginia": "WV", "Wisconsin": "WI", "Wyoming": "WY",
 }
 
 
@@ -436,57 +453,90 @@ def build_top_issues_html(updates):
 # ── BUILD SVG HEAT MAP ───────────────────────────────────────────────────────────
 
 def build_svg_map(state_info):
-    """Generate an inline SVG national map colored by cold-hot density."""
-    shapes = []
+    """Generate a compact hex tile map of the US, colored by Score-3 density."""
+    import math
+
+    # Hex geometry — flat-topped hexagons
+    R = 22          # circumradius (center to vertex)
+    W = R * 2       # width of flat-topped hex
+    H = R * math.sqrt(3)  # height
+    GAP = 2         # gap between hexes
+    col_step = (W + GAP) * 0.75  # horizontal spacing (3/4 width for flat-top tessellation)
+    row_step = H + GAP           # vertical spacing
+
+    # Precompute flat-topped hex vertex offsets
+    angles = [math.radians(60 * i) for i in range(6)]
+    hex_verts = [(R * math.cos(a), R * math.sin(a)) for a in angles]
+
+    def hex_points(cx, cy):
+        return " ".join(f"{cx + vx:.1f},{cy + vy:.1f}" for vx, vy in hex_verts)
+
+    hexes = []
     labels = []
+    padding = 30
 
-    for state_name, geo in STATE_GEO.items():
-        if not geo["path"]:
-            continue
+    for state_name, (col, row) in STATE_HEX.items():
+        cx = padding + col * col_step
+        cy = padding + row * row_step
+        # Odd columns offset down by half a row
+        if col % 2 == 1:
+            cy += row_step / 2
+
+        abbrev = STATE_ABBREV.get(state_name, state_name[:2].upper())
         info = state_info.get(state_name)
-        if info:
-            fill   = heat_fill(info["hot3"])
-            stroke = "#5A6880"
-            total  = info["total"]
-            hot3   = info["hot3"]
-            title  = f"{state_name}: {total} items, {hot3} high-heat"
-        else:
-            fill   = "#EDF1F7"
-            stroke = "#B8C4D4"
-            title  = f"{state_name}: no items"
 
-        shapes.append(
-            f'    <path d="{geo["path"]}" fill="{fill}" stroke="{stroke}" '
-            f'stroke-width="1" opacity="0.9">'
-            f'<title>{escape(title)}</title></path>'
+        if info:
+            fill  = heat_fill(info["hot3"])
+            stroke = "#5A6880"
+            title = f"{state_name}: {info['total']} items, {info['hot3']} actionable"
+            text_fill = "#0D1B2E"
+            font_weight = "800" if info["hot3"] > 0 else "600"
+        else:
+            fill  = "#EDF1F7"
+            stroke = "#C0CCDB"
+            title = f"{state_name}: no items"
+            text_fill = "#8899AA"
+            font_weight = "600"
+
+        pts = hex_points(cx, cy)
+        hexes.append(
+            f'    <polygon points="{pts}" fill="{fill}" stroke="{stroke}" '
+            f'stroke-width="1.2"><title>{escape(title)}</title></polygon>'
         )
-        if info and geo["tx"] > 0:
-            labels.append(
-                f'    <text x="{geo["tx"]}" y="{geo["ty"]}" '
-                f'font-size="9" font-weight="700" fill="#0D1B2E" '
-                f'text-anchor="middle" dominant-baseline="central" '
-                f'style="pointer-events:none;">{escape(geo["abbrev"])}</text>'
-            )
+        labels.append(
+            f'    <text x="{cx:.1f}" y="{cy + 1:.1f}" '
+            f'font-size="8" font-weight="{font_weight}" fill="{text_fill}" '
+            f'text-anchor="middle" dominant-baseline="central" '
+            f'font-family="Source Serif 4, serif" '
+            f'style="pointer-events:none;">{escape(abbrev)}</text>'
+        )
+
+    # Compute viewBox from content
+    all_cols = [c for c, r in STATE_HEX.values()]
+    all_rows = [r for c, r in STATE_HEX.values()]
+    max_x = padding + max(all_cols) * col_step + R + 10
+    max_y = padding + (max(all_rows) + 1) * row_step + R + 30  # room for legend
 
     # Legend
+    legend_y = max_y - 18
     legend_items = [
         ("#EDF1F7", "No data"),
-        ("#DDE5F0", "0 hot"),
-        ("#FFF8CC", "1–2 hot"),
-        ("#FFD0D0", "3 hot"),
-        ("#FF8888", "5+ hot"),
+        ("#DDE5F0", "Active"),
+        ("#FFF8CC", "1–2 🔥"),
+        ("#FFD0D0", "3 🔥"),
+        ("#FF8888", "5+ 🔥"),
     ]
     legend = []
     for i, (color, label) in enumerate(legend_items):
-        x = 70 + i * 100
-        legend.append(f'    <rect x="{x}" y="530" width="14" height="14" fill="{color}" stroke="#9AAFC8" stroke-width="0.5" rx="2"/>')
-        legend.append(f'    <text x="{x+20}" y="541" font-size="10" fill="#5A6880">{label}</text>')
+        lx = padding + i * 80
+        legend.append(f'    <rect x="{lx}" y="{legend_y}" width="11" height="11" fill="{color}" stroke="#9AAFC8" stroke-width="0.5" rx="2"/>')
+        legend.append(f'    <text x="{lx + 15}" y="{legend_y + 9}" font-size="9" fill="#5A6880" font-family="Source Serif 4, serif">{label}</text>')
 
     svg_lines = [
-        '<svg viewBox="60 100 820 470" xmlns="http://www.w3.org/2000/svg" '
-        'style="width:100%;max-width:900px;height:auto;display:block;margin:0 auto 32px;">',
+        f'<svg viewBox="0 0 {max_x:.0f} {max_y:.0f}" xmlns="http://www.w3.org/2000/svg" '
+        f'style="width:100%;max-width:480px;height:auto;display:block;margin:0 auto 24px;">',
         '  <g>',
-    ] + shapes + labels + [
+    ] + hexes + labels + [
         '  </g>',
     ] + legend + [
         '</svg>',
