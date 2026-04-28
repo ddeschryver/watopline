@@ -5,13 +5,51 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Whiteboard Advisors — Topline Intelligence Report</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,300;1,8..60,400&display=swap" rel="stylesheet" />
+<script>
+/* ── ACCENT COLOR RANDOMIZER ─────────────────────────────────────────────────
+   Picks a different blue/teal/indigo accent on each page load.
+   Runs synchronously in <head> before paint to avoid a color flash.
+   To pin a color, set ?accent=<name> in the URL (e.g., ?accent=teal).
+   Available names: cerulean, sky, cobalt, azure, teal, indigo, cyan, slate.
+─────────────────────────────────────────────────────────────────────────────*/
+(function () {
+  var PALETTES = [
+    { name: 'cerulean', accent: '#2A7DC9', dark: '#1A5FA0', rgb: '42,125,201',  tint: '#E8F2FB' },
+    { name: 'sky',      accent: '#0EA5E9', dark: '#0369A1', rgb: '14,165,233',  tint: '#E0F4FE' },
+    { name: 'cobalt',   accent: '#2563EB', dark: '#1D4ED8', rgb: '37,99,235',   tint: '#E5EEFD' },
+    { name: 'azure',    accent: '#3B82F6', dark: '#1E40AF', rgb: '59,130,246',  tint: '#E8F0FE' },
+    { name: 'teal',     accent: '#0E9F8E', dark: '#0F766E', rgb: '14,159,142',  tint: '#DEF5F1' },
+    { name: 'indigo',   accent: '#5B6FE8', dark: '#4338CA', rgb: '91,111,232',  tint: '#ECEDFE' },
+    { name: 'cyan',     accent: '#0891B2', dark: '#155E75', rgb: '8,145,178',   tint: '#DEF3F8' },
+    { name: 'slate',    accent: '#475BD5', dark: '#3730A3', rgb: '71,91,213',   tint: '#E7E9FB' },
+  ];
+  // Allow ?accent=name in the URL to pin a color (handy for screenshots / QA)
+  var pinned = null;
+  try {
+    var qs = new URLSearchParams(window.location.search).get('accent');
+    if (qs) pinned = PALETTES.find(function(p){ return p.name === qs.toLowerCase(); }) || null;
+  } catch (e) { /* old browser — fall through to random */ }
+  var p = pinned || PALETTES[Math.floor(Math.random() * PALETTES.length)];
+  var r = document.documentElement;
+  r.style.setProperty('--hmh-accent',      p.accent);
+  r.style.setProperty('--hmh-accent-dark', p.dark);
+  r.style.setProperty('--hmh-accent-rgb',  p.rgb);
+  r.style.setProperty('--hmh-accent-tint', p.tint);
+  r.style.setProperty('--hmh-pink',        p.accent);  /* legacy alias */
+  r.style.setProperty('--hmh-orange',      p.dark);    /* legacy alias */
+  r.dataset.accent = p.name;
+})();
+</script>
 <style>
   :root {
-    /* ── Whiteboard Advisors brand palette ── */
-    --hmh-pink:         #7B2D8B;
-    --hmh-orange:       #5C1A6E;
-    --hmh-accent:       #7B2D8B;
-    --hmh-accent-dark:  #4A1260;
+    /* ── W/A accent palette (overridden at load by JS color randomizer) ── */
+    /* Default = cerulean. JS picks a different blue/teal/indigo on each refresh. */
+    --hmh-pink:         #2A7DC9;
+    --hmh-orange:       #1A5FA0;
+    --hmh-accent:       #2A7DC9;
+    --hmh-accent-dark:  #1A5FA0;
+    --hmh-accent-rgb:   42, 125, 201;     /* RGB tuple for rgba() overlays */
+    --hmh-accent-tint:  #E8F2FB;          /* very light wash for card backgrounds */
 
     /* Page structure — dark blue & gray */
     --hmh-navy:         #0D1B2E;
@@ -96,55 +134,435 @@
     background: var(--hmh-navy); color: white; border-color: var(--hmh-navy);
   }
 
-  /* ── HEADER ──────────────────────────────────────── */
+  /* ── CONDENSED MASTHEAD ─────────────────────────────── */
   .memo-header {
     background: linear-gradient(135deg, #0D1B2E 0%, #1A2E4A 55%, #0D1B2E 100%);
     color: white;
-    padding: 0;
     position: relative;
     overflow: hidden;
   }
   .memo-header::before {
     content: '';
-    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-    background: linear-gradient(135deg, rgba(123,45,139,0.15) 0%, rgba(92,26,110,0.08) 70%, transparent 100%);
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 55% 90% at 90% 50%, rgba(var(--hmh-accent-rgb), .18) 0%, transparent 65%),
+      radial-gradient(ellipse 35% 60% at 5% 85%, rgba(26,46,74,.6) 0%, transparent 60%);
     pointer-events: none;
   }
   .memo-header-inner {
     position: relative; z-index: 1;
-    padding: 52px 64px 40px;
-    display: grid; grid-template-columns: 1fr auto;
-    align-items: start; gap: 32px;
-    border-bottom: 3px solid var(--hmh-accent);
+    max-width: 960px; margin: 0 auto;
+    padding: 36px 48px 28px;
   }
-  .memo-brand { display: flex; align-items: center; gap: 16px; margin-bottom: 28px; }
-  .memo-logo-box {
-    background: linear-gradient(135deg, #3A3A3A 0%, #2A2A2A 50%, #1A1A1A 100%);
-    color: white;
+  .masthead-eyebrow {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .logo-pill {
+    background: var(--hmh-accent); color: white;
+    font-family: 'Source Serif 4', serif;
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    padding: 4px 11px;
+  }
+  .date-tag {
+    font-family: 'Source Serif 4', serif;
+    font-size: 11px; font-weight: 400;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 0.06em;
+  }
+  .confidential-pill {
+    display: inline-block;
+    border: 1px solid rgba(253,230,150,0.4);
+    color: rgba(253,230,150,0.75);
+    font-family: 'Source Serif 4', serif;
+    font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase;
+    padding: 2px 9px; font-weight: 600;
+    margin-left: auto;
+  }
+  .memo-title {
     font-family: 'Playfair Display', serif;
-    font-weight: 700;
-    font-size: 22px;
-    letter-spacing: 0.08em;
-    padding: 10px 18px;
-    line-height: 1;
-    border: none;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.25);
+    font-size: clamp(26px, 4vw, 38px);
+    font-weight: 700; line-height: 1.12;
+    letter-spacing: -0.015em;
+    color: white; margin-bottom: 8px;
   }
-  .memo-brand-sub { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(255,255,255,0.5); font-weight: 300; }
-  .memo-title { font-family: 'Playfair Display', serif; font-size: 36px; font-weight: 700; line-height: 1.15; letter-spacing: -0.01em; color: white; margin-bottom: 8px; }
-  .memo-subtitle { font-size: 13px; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(253,230,150,0.85); font-weight: 400; margin-bottom: 32px; }
-  .memo-meta-grid { display: grid; grid-template-columns: 80px 1fr; gap: 6px 16px; font-size: 13.5px; color: rgba(255,255,255,0.85); font-weight: 300; }
-  .memo-meta-grid .label { color: rgba(253,230,150,0.9); font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; padding-top: 2px; font-weight: 600; }
-  .memo-meta-grid .val { border-bottom: 1px solid rgba(255,255,255,0.12); padding-bottom: 4px; margin-bottom: 2px; }
-  .memo-date-badge { text-align: right; color: rgba(255,255,255,0.35); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 4px; }
-  .confidential-stamp { display: inline-block; border: 1.5px solid rgba(253,230,150,0.4); color: rgba(253,230,150,0.7); font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase; padding: 3px 10px; font-weight: 600; margin-bottom: 16px; }
+  .memo-title span { color: var(--hmh-accent); }
+  .memo-subtitle {
+    font-size: 12.5px; color: rgba(255,255,255,0.55);
+    font-weight: 300; letter-spacing: 0.06em;
+  }
+  .masthead-rule {
+    height: 3px;
+    background: linear-gradient(90deg, var(--hmh-accent) 0%, var(--hmh-navy-light) 60%, transparent 100%);
+  }
+
+  /* ── FILTER TOGGLE BUTTON ───────────────────────────── */
+  .filter-toggle-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: rgba(13,27,46,0.05);
+    border: 1px solid var(--border-light);
+    color: var(--text-muted);
+    font-family: 'Source Serif 4', serif;
+    font-size: 9px; font-weight: 700;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    padding: 3px 9px 3px 7px; cursor: pointer; border-radius: 3px;
+    transition: all 0.15s; white-space: nowrap; flex-shrink: 0;
+    margin-left: auto; line-height: 1.4;
+  }
+  .filter-toggle-btn:hover { background: var(--hmh-navy); color: white; border-color: var(--hmh-navy); }
+  .filter-toggle-btn.has-filter {
+    border-color: var(--hmh-accent); color: var(--hmh-accent);
+    background: rgba(var(--hmh-accent-rgb), 0.08);
+  }
+  .filter-toggle-btn.has-filter:hover { background: var(--hmh-accent); color: white; border-color: var(--hmh-accent); }
+  .toggle-chevron {
+    font-style: normal; font-size: 10px; display: inline-block;
+    transition: transform 0.25s ease;
+  }
+  .filter-toggle-btn.is-collapsed .toggle-chevron { transform: rotate(-90deg); }
+  .nav-clear-btn {
+    display: none;
+    align-items: center; gap: 4px;
+    background: rgba(214,56,32,0.1);
+    border: 1px solid rgba(214,56,32,0.35);
+    color: #d63820;
+    font-family: 'Source Serif 4', serif;
+    font-size: 9px; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    padding: 3px 9px; cursor: pointer; border-radius: 3px;
+    transition: all 0.15s; white-space: nowrap; flex-shrink: 0; line-height: 1.4;
+  }
+  .nav-clear-btn.visible { display: inline-flex; }
+  .nav-clear-btn:hover { background: #d63820; color: white; border-color: #d63820; }
+  .filter-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--hmh-accent); display: none; flex-shrink: 0;
+  }
+  .filter-toggle-btn.has-filter .filter-dot { display: inline-block; }
+
+  /* ── ISSUE FILTER BAR ──────────────────────────────── */
+  .issue-filter-bar {
+    background: var(--hmh-navy);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    position: sticky; z-index: 99;
+    box-shadow: 0 2px 8px rgba(13,27,46,0.18);
+    overflow: hidden;
+    transition: max-height .3s ease, padding .3s ease,
+                box-shadow .3s ease, border-bottom-color .3s ease;
+    padding: 8px 48px;
+  }
+  .issue-filter-bar.collapsed {
+    max-height: 0 !important; padding-top: 0; padding-bottom: 0;
+    border-bottom-color: transparent; box-shadow: none;
+  }
+  .issue-filter-inner {
+    max-width: 960px; margin: 0 auto;
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  }
+  .issue-filter-label {
+    font-family: 'Source Serif 4', serif;
+    font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: rgba(255,255,255,0.5); font-weight: 700;
+    white-space: nowrap; margin-right: 4px; flex-shrink: 0;
+  }
+  .issue-chip {
+    display: inline-block;
+    font-family: 'Source Serif 4', serif;
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.07em; text-transform: uppercase;
+    padding: 3px 10px; border-radius: 12px;
+    background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.65);
+    border: 1px solid rgba(255,255,255,0.14);
+    cursor: pointer; transition: all 0.15s; user-select: none;
+  }
+  .issue-chip:hover { background: rgba(255,255,255,0.16); color: white; border-color: rgba(255,255,255,0.3); }
+  .issue-chip.active { background: var(--hmh-accent); color: white; border-color: var(--hmh-accent); }
+  .issue-chip.all-chip.active { background: rgba(255,255,255,0.22); color: white; border-color: rgba(255,255,255,0.4); }
+  .issue-chip.issue-dimmed { opacity: 0.3; cursor: default; pointer-events: none; }
+
+  /* ── FILTER STATUS BAR ─────────────────────────────── */
+  .filter-status-bar {
+    background: rgba(var(--hmh-accent-rgb), 0.08);
+    border-bottom: 1px solid rgba(var(--hmh-accent-rgb), 0.22);
+    padding: 6px 48px;
+  }
+  .filter-status-inner {
+    max-width: 960px; margin: 0 auto;
+    display: flex; align-items: center; gap: 10px;
+    font-family: 'Source Serif 4', serif;
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 0.06em; color: var(--hmh-accent-dark);
+    text-transform: uppercase; flex-wrap: wrap;
+  }
+  .status-label { color: var(--text-muted); font-weight: 400; text-transform: none; letter-spacing: 0; font-size: 12px; }
+  .status-tag { background: var(--hmh-accent); color: white; padding: 2px 8px; border-radius: 10px; font-size: 10px; }
+  .status-tag.state-tag { background: var(--hmh-navy); }
+  .filter-clear-all {
+    margin-left: auto; cursor: pointer;
+    font-family: 'Source Serif 4', serif;
+    font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; font-weight: 700;
+    color: var(--hmh-accent-dark); background: none;
+    border: 1px solid rgba(var(--hmh-accent-rgb), 0.3); padding: 2px 10px;
+    border-radius: 10px; transition: all 0.15s;
+  }
+  .filter-clear-all:hover { background: var(--hmh-accent); color: white; border-color: var(--hmh-accent); }
+
+  /* ── TOC LABEL ROW (UPDATED FOR FILTER TOGGLE) ────── */
+  .toc-label-row {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+  }
+  .toc-label-row .toc-label { flex: 1; margin-bottom: 0; }
+  .toc-heat-legend {
+    font-weight: 400; letter-spacing: 0; text-transform: none;
+    font-size: 10px; color: var(--text-muted);
+    display: flex; align-items: center; gap: 4px;
+  }
+  .toc-chip.state-active {
+    background: var(--hmh-navy) !important; color: white !important;
+    border-color: var(--hmh-accent) !important;
+    box-shadow: 0 0 0 2px var(--hmh-accent);
+  }
+  .toc-chip.state-dimmed { opacity: 0.2; cursor: default; pointer-events: none; }
+
+  /* ── FILTER BEHAVIOR CLASSES ───────────────────────── */
+  .entry-card.issue-hidden { display: none; }
+  .state-section.issue-empty { display: none; }
+
+  /* ── WEEKLY VIDEO OVERVIEW WIDGET (PiP) ─────────────── */
+  .video-pip {
+    position: fixed; bottom: 28px; right: 80px;
+    width: 320px; height: auto;
+    background: var(--hmh-navy);
+    border: 1px solid rgba(var(--hmh-accent-rgb), 0.4);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.32);
+    z-index: 98;
+    display: flex; flex-direction: column;
+    transition: transform 0.25s ease, opacity 0.25s ease;
+  }
+  .video-pip.collapsed {
+    width: auto; height: auto;
+  }
+  .video-pip.collapsed .video-pip-body { display: none; }
+  .video-pip.hidden {
+    transform: translateY(120%); opacity: 0; pointer-events: none;
+  }
+  .video-pip-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px;
+    background: linear-gradient(90deg, var(--hmh-accent-dark) 0%, var(--hmh-accent) 100%);
+    color: white;
+    cursor: move;
+    user-select: none;
+  }
+  .video-pip-icon {
+    font-size: 14px; flex-shrink: 0;
+  }
+  .video-pip-title {
+    flex: 1;
+    font-family: 'Source Serif 4', serif;
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: white;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .video-pip-btn {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.25);
+    color: white;
+    font-size: 11px; line-height: 1;
+    width: 22px; height: 22px;
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer; padding: 0;
+    transition: background 0.15s, border-color 0.15s;
+    font-family: inherit;
+  }
+  .video-pip-btn:hover {
+    background: rgba(255,255,255,0.3);
+    border-color: rgba(255,255,255,0.5);
+  }
+  .video-pip-btn:focus-visible {
+    outline: 2px solid white; outline-offset: 1px;
+  }
+  .video-pip-body {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: black;
+  }
+  .video-pip-body iframe {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    border: 0;
+  }
+  .video-pip-launcher {
+    position: fixed; bottom: 28px; right: 80px;
+    width: 52px; height: 52px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--hmh-accent-dark) 0%, var(--hmh-accent) 100%);
+    color: white;
+    border: 2px solid rgba(255,255,255,0.15);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+    cursor: pointer;
+    display: none;
+    align-items: center; justify-content: center;
+    font-size: 22px;
+    z-index: 98;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+  }
+  .video-pip-launcher:hover {
+    transform: scale(1.06);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+  }
+  .video-pip-launcher.visible { display: flex; }
+  .video-pip-launcher::after {
+    content: ''; position: absolute; inset: -3px;
+    border-radius: 50%;
+    border: 2px solid var(--hmh-accent);
+    opacity: 0.6;
+    animation: pip-pulse 2.4s ease-out infinite;
+  }
+  @keyframes pip-pulse {
+    0%   { transform: scale(1);    opacity: 0.6; }
+    70%  { transform: scale(1.4);  opacity: 0; }
+    100% { transform: scale(1.4);  opacity: 0; }
+  }
 
   /* ── BODY ────────────────────────────────────────── */
   .memo-body { max-width: 960px; margin: 0 auto; padding: 52px 48px 80px; }
-  .intro-block { background: #F4F7FB; border-left: 4px solid var(--hmh-accent); padding: 28px 32px; margin-bottom: 48px; box-shadow: 0 1px 8px rgba(13,27,46,0.07); }
-  .intro-block p { font-size: 15px; color: var(--text-secondary); margin-bottom: 12px; }
-  .intro-block p:last-child { margin-bottom: 0; }
-  .dashboard-link { display: inline-flex; align-items: center; gap: 8px; color: var(--hmh-accent-dark); text-decoration: none; font-weight: 600; font-size: 14px; border-bottom: 1px solid rgba(232,0,107,0.35); padding-bottom: 1px; transition: all 0.2s; }
+  /* ── OVERVIEW BLOCK (merges intro + stats; data leads, prose follows) ── */
+  .overview-block {
+    background: linear-gradient(135deg, #F4F7FB 0%, #EAF1F8 100%);
+    border-left: 3px solid var(--hmh-accent);
+    margin-bottom: 32px;
+    box-shadow: 0 1px 6px rgba(13,27,46,0.06);
+    overflow: hidden;
+  }
+  .overview-eyebrow {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 14px;
+    padding: 9px 22px;
+    background: rgba(var(--hmh-accent-rgb), 0.08);
+    border-bottom: 1px solid rgba(var(--hmh-accent-rgb), 0.18);
+  }
+  .overview-period {
+    font-family: 'Playfair Display', serif;
+    font-size: 14px; font-weight: 700;
+    color: var(--hmh-accent-dark);
+    letter-spacing: -0.005em;
+  }
+  .overview-window {
+    font-size: 9.5px; letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text-muted); font-weight: 600;
+  }
+
+  /* Stats grid — visual centerpiece, compact */
+  .overview-stats {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.6fr);
+    gap: 0;
+    padding: 14px 22px 14px;
+    background: white;
+    border-bottom: 1px solid #E0E7F0;
+  }
+  .big-stat {
+    padding: 2px 18px;
+    border-right: 1px solid #E8EEF6;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .big-stat:first-child { padding-left: 0; }
+  .big-stat:last-child  { border-right: 0; padding-right: 0; }
+  .big-stat .stat-number {
+    font-family: 'Playfair Display', serif;
+    font-size: 36px; font-weight: 700;
+    line-height: 1;
+    margin-bottom: 4px;
+    letter-spacing: -0.02em;
+  }
+  .big-stat .stat-number.total  { color: var(--hmh-accent-dark); }
+  .big-stat .stat-number.states { color: var(--hmh-navy); }
+  .big-stat .stat-number        { color: var(--hmh-navy-mid); }
+  .big-stat .stat-label {
+    font-size: 9px; letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text-muted); font-weight: 700;
+  }
+  .big-stat.top-issues .stat-label { margin-bottom: 5px; }
+  .big-stat.top-issues .top-issues-list {
+    display: flex; flex-wrap: wrap;
+    gap: 4px 10px;
+  }
+  .big-stat.top-issues .top-issue {
+    display: inline-flex; align-items: baseline; gap: 5px;
+    font-size: 11.5px; line-height: 1.35;
+    white-space: nowrap;
+  }
+  .big-stat.top-issues .top-issue-rank {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700; font-size: 11px;
+    color: var(--hmh-accent);
+    flex-shrink: 0;
+  }
+  .big-stat.top-issues .top-issue-name {
+    font-weight: 600; color: var(--text-primary);
+  }
+  .big-stat.top-issues .top-issue-count {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700; font-size: 12px;
+    color: var(--hmh-navy);
+    flex-shrink: 0;
+  }
+
+  /* Compact prose footer */
+  .overview-prose {
+    padding: 9px 22px 11px;
+    display: flex; flex-wrap: wrap; align-items: center;
+    gap: 6px 14px;
+    font-size: 11.5px; color: var(--text-secondary);
+    line-height: 1.5;
+  }
+  .overview-prose .prose-note {
+    flex: 1 1 280px;
+    min-width: 0;
+  }
+  .overview-prose .prose-links {
+    display: flex; flex-wrap: wrap; gap: 12px;
+    align-items: center;
+    margin-left: auto;
+  }
+  .overview-prose .prose-links a {
+    font-size: 11.5px;
+    border-bottom-width: 1px;
+  }
+  .overview-prose .prose-links a::before { font-size: 13px; }
+  .badge-inline {
+    display: inline-block;
+    padding: 0 5px; border-radius: 7px;
+    font-size: 9.5px; font-weight: 700;
+    letter-spacing: 0.02em;
+    vertical-align: 1px;
+  }
+  .badge-inline.declining { background: #FDECEA; border: 1px solid #F5A0A0; color: #8B1A1A; }
+  .badge-inline.flat      { background: #FFF8E1; border: 1px solid #F5D870; color: #7A5800; }
+  .badge-inline.improving { background: #E8F5E8; border: 1px solid #80C880; color: #1A5C1A; }
+
+  @media (max-width: 760px) {
+    .overview-stats {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      padding: 12px 18px;
+    }
+    .big-stat { padding: 2px 12px; }
+    .big-stat .stat-number { font-size: 30px; }
+    .big-stat.top-issues {
+      grid-column: 1 / -1;
+      border-right: 0; border-top: 1px solid #E8EEF6;
+      padding: 10px 0 0; margin-top: 6px;
+    }
+    .overview-eyebrow,
+    .overview-prose { padding-left: 18px; padding-right: 18px; }
+    .overview-prose .prose-links { margin-left: 0; }
+  }
+  .dashboard-link { display: inline-flex; align-items: center; gap: 8px; color: var(--hmh-accent-dark); text-decoration: none; font-weight: 600; font-size: 14px; border-bottom: 1px solid rgba(var(--hmh-accent-rgb), 0.35); padding-bottom: 1px; transition: all 0.2s; }
   .dashboard-link:hover { color: var(--hmh-accent); border-color: var(--hmh-accent); }
   .dashboard-link::before { content: '→'; font-size: 16px; }
 
@@ -158,24 +576,24 @@
   /* ── ENTRY CARDS ─────────────────────────────────── */
   .entry-card { background: var(--card-bg); border: 1px solid var(--border-light); margin-bottom: 16px; padding: 22px 26px; position: relative; transition: box-shadow 0.2s; }
   .entry-card:hover { box-shadow: 0 4px 16px rgba(13,27,46,0.10); }
-  .entry-card.score3 { border-left: 4px solid var(--hmh-accent); background: #F3E8F9; }
+  .entry-card.score3 { border-left: 4px solid var(--hmh-accent); background: var(--hmh-accent-tint); }
   .entry-card.score2 { border-left: 4px solid var(--hmh-navy); }
   .entry-card.score1 { border-left: 4px solid #8AAABF; }
-  .entry-card.has-soundbyte { border-top: 3px solid #7B2D8B; }
+  .entry-card.has-soundbyte { border-top: 3px solid var(--hmh-accent); }
 
   /* ── W/A VIDEO CALLOUT ───────────────────────────── */
   .wa-video-callout {
     display: flex; align-items: center; gap: 10px;
-    background: rgba(123,45,139,0.06);
-    border: 1px solid rgba(123,45,139,0.22);
-    border-left: 3px solid #7B2D8B;
+    background: rgba(var(--hmh-accent-rgb), 0.06);
+    border: 1px solid rgba(var(--hmh-accent-rgb), 0.22);
+    border-left: 3px solid var(--hmh-accent);
     padding: 8px 14px; margin-bottom: 14px;
   }
   .wa-video-callout-icon { font-size: 16px; flex-shrink: 0; }
   .wa-video-callout-text { display: flex; flex-direction: column; gap: 3px; }
-  .wa-video-callout-label { font-size: 9px; letter-spacing: 0.2em; color: #7B2D8B; font-weight: 700; text-transform: uppercase; }
-  .wa-video-link { display: inline-flex; align-items: center; gap: 5px; color: #7B2D8B; text-decoration: none; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; border-bottom: 1px solid rgba(123,45,139,0.3); }
-  .wa-video-link:hover { border-color: #7B2D8B; }
+  .wa-video-callout-label { font-size: 9px; letter-spacing: 0.2em; color: var(--hmh-accent); font-weight: 700; text-transform: uppercase; }
+  .wa-video-link { display: inline-flex; align-items: center; gap: 5px; color: var(--hmh-accent); text-decoration: none; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; border-bottom: 1px solid rgba(var(--hmh-accent-rgb), 0.3); }
+  .wa-video-link:hover { border-color: var(--hmh-accent); }
 
   /* ── META ROW ────────────────────────────────────── */
   .entry-meta { display: flex; flex-wrap: wrap; gap: 6px 10px; margin-bottom: 10px; align-items: center; }
@@ -186,7 +604,7 @@
 
   /* Score pill tags */
   .actionable-score { margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 11px; }
-  .score3-tag { color: #4A1260; background: #F3E8F9; padding: 2px 9px; border-radius: 10px; border: 1px solid var(--hmh-accent); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; }
+  .score3-tag { color: var(--hmh-accent-dark); background: var(--hmh-accent-tint); padding: 2px 9px; border-radius: 10px; border: 1px solid var(--hmh-accent); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; }
   .score2-tag { color: #0D1B2E; background: #C8D6E8; padding: 2px 9px; border-radius: 10px; border: 1px solid #8AAABF; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; }
   .score1-tag { color: #4A5868; background: #DDE5F0; padding: 2px 9px; border-radius: 10px; border: 1px solid #B8C4D4; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; }
 
@@ -204,11 +622,11 @@
   .district-badge { font-size: 11px; color: var(--text-muted); margin-bottom: 8px; font-style: italic; }
   .entry-content { font-size: 14.5px; color: var(--text-secondary); line-height: 1.72; }
   .why-matters { font-weight: 600; color: var(--hmh-accent-dark); font-style: italic; margin-right: 4px; }
-  .source-link { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--hmh-accent-dark); text-decoration: none; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; margin-top: 8px; border-bottom: 1px solid rgba(232,0,107,0.25); }
+  .source-link { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--hmh-accent-dark); text-decoration: none; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; margin-top: 8px; border-bottom: 1px solid rgba(var(--hmh-accent-rgb), 0.25); }
   .source-link:hover { border-color: var(--hmh-pink); }
 
   /* HMH Alert box */
-  .hot-analysis { margin-top: 12px; padding: 12px 16px; background: rgba(123,45,139,0.04); border-left: 3px solid var(--hmh-accent); font-size: 13.5px; color: var(--hmh-navy); font-weight: 400; }
+  .hot-analysis { margin-top: 12px; padding: 12px 16px; background: rgba(var(--hmh-accent-rgb), 0.04); border-left: 3px solid var(--hmh-accent); font-size: 13.5px; color: var(--hmh-navy); font-weight: 400; }
   .hot-analysis::before { content: '📌 W/A Alert: '; font-weight: 700; color: var(--hmh-accent-dark); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; }
 
   /* Section back-to-top */
@@ -237,13 +655,13 @@
   /* ── FOOTER & AUTOMATION PANEL ───────────────────── */
   .memo-footer { margin-top: 64px; padding-top: 24px; border-top: 2px solid var(--hmh-navy); display: flex; justify-content: space-between; align-items: center; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
   .footer-brand { font-family: 'Playfair Display', serif; font-size: 14px; font-weight: 700; color: var(--hmh-accent-dark); text-transform: none; letter-spacing: 0; }
-  .automation-panel { background: var(--hmh-navy); border: 1px solid rgba(123,45,139,0.2); border-left: 4px solid var(--hmh-accent); padding: 14px 22px; margin-bottom: 28px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; font-size: 12px; }
+  .automation-panel { background: var(--hmh-navy); border: 1px solid rgba(var(--hmh-accent-rgb), 0.2); border-left: 4px solid var(--hmh-accent); padding: 14px 22px; margin-bottom: 28px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; font-size: 12px; }
   .auto-label { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(255,200,220,0.8); font-weight: 700; white-space: nowrap; }
   .auto-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: rgba(255,255,255,0.65); white-space: nowrap; }
   .auto-badge strong { color: white; font-weight: 600; }
   .auto-status { display: inline-flex; align-items: center; gap: 7px; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; padding: 4px 12px; }
   .auto-status.active  { background: rgba(34,197,94,0.12); color: #4ADE80; border: 1px solid rgba(34,197,94,0.25); }
-  .auto-status.manual  { background: rgba(232,0,107,0.10); color: #E8006B; border: 1px solid rgba(232,0,107,0.3); }
+  .auto-status.manual  { background: rgba(var(--hmh-accent-rgb), 0.10); color: #E8006B; border: 1px solid rgba(var(--hmh-accent-rgb), 0.3); }
   .auto-status.pending { background: rgba(200,16,46,0.12);  color: #F87171; border: 1px solid rgba(200,16,46,0.25); }
   .auto-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; background: currentColor; flex-shrink: 0; }
   .auto-status.active .auto-dot { animation: pulse-dot 2s ease-in-out infinite; }
@@ -259,18 +677,27 @@
 
   /* ── RESPONSIVE ──────────────────────────────────── */
   @media (max-width: 700px) {
-    .memo-header-inner { padding: 32px 24px 28px; grid-template-columns: 1fr; }
-    .memo-title { font-size: 26px; }
+    .memo-header-inner { padding: 28px 22px 22px; }
+    .memo-title { font-size: 24px; }
+    .masthead-eyebrow { gap: 8px; }
+    .confidential-pill { margin-left: 0; }
     .memo-body { padding: 32px 20px 60px; }
     .stats-bar { flex-direction: column; }
     .state-toc { padding: 10px 16px; }
     .toc-chip { padding: 2px 6px; font-size: 9px; }
+    .toc-heat-legend { display: none; }
+    .issue-filter-bar { padding: 8px 16px; }
+    .filter-status-bar { padding: 6px 16px; }
     .automation-panel { flex-direction: column; align-items: flex-start; }
     .auto-panel-right { margin-left: 0; }
     .auto-divider { display: none; }
+    .video-pip { width: calc(100vw - 32px); right: 16px; bottom: 80px; }
+    .video-pip-launcher { right: 16px; }
   }
   @media print {
-    .automation-panel, .state-toc, .back-to-top { display: none; }
+    .automation-panel, .state-toc, .back-to-top,
+    .issue-filter-bar, .filter-status-bar,
+    .video-pip, .video-pip-launcher { display: none !important; }
     body { background: white; font-size: 13px; }
     .memo-body { padding: 24px 0; }
     .entry-card { break-inside: avoid; }
@@ -285,146 +712,146 @@
 <!-- HEADER -->
 <header class="memo-header">
   <div class="memo-header-inner">
-    <div>
-      <div class="memo-brand">
-        <div class="memo-logo-box">W/A</div>
-        <div class="memo-brand-sub">Whiteboard Advisors</div>
-      </div>
-      <div class="confidential-stamp">Privileged &amp; Confidential</div>
-      <div class="memo-title">Market Intelligence<br/>Memorandum</div>
-      <div class="memo-subtitle">Education Policy Topline — Rolling 7-Day Intelligence Report</div>
-      <div class="memo-meta-grid">
-        <span class="label">To</span>
-        <span class="val">Whiteboard Advisors Client Team</span>
-        <span class="label">From</span>
-        <span class="val">Whiteboard Advisors — Market Intelligence Team</span>
-        <span class="label">Date</span>
-        <span class="val">April 27, 2026</span>
-        <span class="label">Re</span>
-        <span class="val">Actionable Education Policy Developments — April 22, 2026 – April 27, 2026</span>
-        <span class="label">Source</span>
-        <span class="val">Whiteboard Advisors Review and Analysis — Action Score: 3 (Actionable) | Rolling 7-Day Window</span>
-      </div>
+    <div class="masthead-eyebrow">
+      <span class="logo-pill">Whiteboard Advisors</span>
+      <span class="date-tag"><!-- PYTHON:HEADER_DATE_RANGE -->April 22, 2026 – April 27, 2026<!-- PYTHON:END_HEADER_DATE_RANGE --></span>
+      <span class="confidential-pill">Privileged &amp; Confidential</span>
     </div>
-    <div class="memo-date-badge">April 27, 2026</div>
+    <h1 class="memo-title">Market Intelligence <span>Topline</span></h1>
+    <p class="memo-subtitle">K–12 Education Policy · Action Score 3 · Rolling 7-Day Review</p>
   </div>
+  <div class="masthead-rule"></div>
 </header>
 
 <!-- STATE QUICK-NAV -->
 <nav class="state-toc" id="state-nav">
   <div class="toc-inner">
-    <div class="toc-label">Jump to State
-      <span style="font-weight:400;letter-spacing:0;text-transform:none;font-size:10px;color:var(--text-muted);">
-        — shading = # of 🔥 Actionable (Score 3) items:
-        <span style="background:var(--hot-0-bg);border:1px solid var(--hot-0-border);color:var(--hot-0-color);padding:0 5px;border-radius:2px;font-size:9px;font-weight:700;">0</span>
-        <span style="background:var(--hot-1-bg);border:1px solid var(--hot-1-border);color:var(--hot-1-color);padding:0 5px;border-radius:2px;font-size:9px;font-weight:700;">1</span>
-        <span style="background:var(--hot-2-bg);border:1px solid var(--hot-2-border);color:var(--hot-2-color);padding:0 5px;border-radius:2px;font-size:9px;font-weight:700;">2</span>
-        <span style="background:var(--hot-3-bg);border:1px solid var(--hot-3-border);color:var(--hot-3-color);padding:0 5px;border-radius:2px;font-size:9px;font-weight:700;">3+</span>
-      </span>
+    <div class="toc-label-row">
+      <div class="toc-label">
+        <span class="toc-label-text">Jump to State</span>
+        <span class="toc-heat-legend">
+          — shading = # of 🔥 Actionable (Score 3) items:
+          <span style="background:var(--hot-0-bg);border:1px solid var(--hot-0-border);color:var(--hot-0-color);padding:0 5px;border-radius:2px;font-size:9px;font-weight:700;">0</span>
+          <span style="background:var(--hot-1-bg);border:1px solid var(--hot-1-border);color:var(--hot-1-color);padding:0 5px;border-radius:2px;font-size:9px;font-weight:700;">1</span>
+          <span style="background:var(--hot-2-bg);border:1px solid var(--hot-2-border);color:var(--hot-2-color);padding:0 5px;border-radius:2px;font-size:9px;font-weight:700;">2</span>
+          <span style="background:var(--hot-3-bg);border:1px solid var(--hot-3-border);color:var(--hot-3-color);padding:0 5px;border-radius:2px;font-size:9px;font-weight:700;">3+</span>
+        </span>
+      </div>
+      <button class="filter-toggle-btn is-collapsed" id="filter-toggle-btn"
+              title="Toggle issue filter" aria-expanded="false" aria-controls="issue-filter-bar">
+        <i class="toggle-chevron">▸</i>
+        <span class="toggle-label">Issues</span>
+        <span class="filter-dot"></span>
+      </button>
+      <button class="nav-clear-btn" id="nav-clear-btn" title="Clear all active filters">
+        ✕ Clear filters
+      </button>
     </div>
     <!-- TOC:BEGIN -->
-    <div class="toc-chips">
-      <a href="#state-alabama" class="toc-chip hot-3" title="Alabama — 3 items, 3 hot">AL</a>
-      <a href="#state-california" class="toc-chip hot-2" title="California — 2 items, 2 hot">CA</a>
-      <a href="#state-colorado" class="toc-chip hot-3" title="Colorado — 3 items, 3 hot">CO</a>
-      <a href="#state-florida" class="toc-chip hot-3" title="Florida — 5 items, 5 hot">FL</a>
-      <a href="#state-georgia" class="toc-chip hot-1" title="Georgia — 1 items, 1 hot">GA</a>
-      <a href="#state-idaho" class="toc-chip hot-1" title="Idaho — 1 items, 1 hot">ID</a>
-      <a href="#state-kentucky" class="toc-chip hot-1" title="Kentucky — 1 items, 1 hot">KY</a>
-      <a href="#state-michigan" class="toc-chip hot-3" title="Michigan — 7 items, 7 hot">MI</a>
-      <a href="#state-missouri" class="toc-chip hot-1" title="Missouri — 1 items, 1 hot">MO</a>
-      <a href="#state-south-carolina" class="toc-chip hot-2" title="South Carolina — 2 items, 2 hot">SC</a>
-      <a href="#state-texas" class="toc-chip hot-2" title="Texas — 2 items, 2 hot">TX</a>
-      <a href="#state-us" class="toc-chip hot-3" title="US — 3 items, 3 hot">US</a>
-      <a href="#state-utah" class="toc-chip hot-1" title="Utah — 1 items, 1 hot">UT</a>
-      <a href="#state-vermont" class="toc-chip hot-1" title="Vermont — 1 items, 1 hot">VT</a>
-      <a href="#state-washington" class="toc-chip hot-1" title="Washington — 1 items, 1 hot">WA</a>
+    <div class="toc-chips" id="toc-chips">
+      <a href="#state-alabama" class="toc-chip hot-3" data-state="alabama" title="Alabama — 3 items, 3 hot">AL</a>
+      <a href="#state-california" class="toc-chip hot-2" data-state="california" title="California — 2 items, 2 hot">CA</a>
+      <a href="#state-colorado" class="toc-chip hot-3" data-state="colorado" title="Colorado — 3 items, 3 hot">CO</a>
+      <a href="#state-florida" class="toc-chip hot-3" data-state="florida" title="Florida — 5 items, 5 hot">FL</a>
+      <a href="#state-georgia" class="toc-chip hot-1" data-state="georgia" title="Georgia — 1 items, 1 hot">GA</a>
+      <a href="#state-idaho" class="toc-chip hot-1" data-state="idaho" title="Idaho — 1 items, 1 hot">ID</a>
+      <a href="#state-kentucky" class="toc-chip hot-1" data-state="kentucky" title="Kentucky — 1 items, 1 hot">KY</a>
+      <a href="#state-michigan" class="toc-chip hot-3" data-state="michigan" title="Michigan — 7 items, 7 hot">MI</a>
+      <a href="#state-missouri" class="toc-chip hot-1" data-state="missouri" title="Missouri — 1 items, 1 hot">MO</a>
+      <a href="#state-south-carolina" class="toc-chip hot-2" data-state="south-carolina" title="South Carolina — 2 items, 2 hot">SC</a>
+      <a href="#state-texas" class="toc-chip hot-2" data-state="texas" title="Texas — 2 items, 2 hot">TX</a>
+      <a href="#state-us" class="toc-chip hot-3" data-state="us" title="US — 3 items, 3 hot">US</a>
+      <a href="#state-utah" class="toc-chip hot-1" data-state="utah" title="Utah — 1 items, 1 hot">UT</a>
+      <a href="#state-vermont" class="toc-chip hot-1" data-state="vermont" title="Vermont — 1 items, 1 hot">VT</a>
+      <a href="#state-washington" class="toc-chip hot-1" data-state="washington" title="Washington — 1 items, 1 hot">WA</a>
     </div>
   <!-- TOC:END -->
   </div>
 </nav>
 
+<!-- ISSUE FILTER BAR — chips built dynamically from cards -->
+<div class="issue-filter-bar collapsed" id="issue-filter-bar">
+  <div class="issue-filter-inner">
+    <span class="issue-filter-label">Filter by Issue</span>
+    <span class="issue-chip all-chip active" data-issue="all">All</span>
+    <!-- chips injected by JS -->
+  </div>
+</div>
+
+<!-- FILTER STATUS BAR — shown by JS when any filter is active -->
+<div class="filter-status-bar" id="filter-status-bar" style="display:none;">
+  <div class="filter-status-inner" id="filter-status-inner">
+    <span class="status-label">Showing:</span>
+    <button class="filter-clear-all" id="filter-clear-all">✕ Clear all filters</button>
+  </div>
+</div>
+
+<!-- WEEKLY VIDEO OVERVIEW — collapsible / pop-out PiP widget -->
+<div class="video-pip collapsed" id="video-pip" role="region" aria-label="Weekly Video Overview">
+  <div class="video-pip-header" id="video-pip-header">
+    <span class="video-pip-icon">🎬</span>
+    <span class="video-pip-title">Weekly Video Overview</span>
+    <button class="video-pip-btn" id="video-pip-popout" type="button"
+            title="Open in new window" aria-label="Open video in new window">⧉</button>
+    <button class="video-pip-btn" id="video-pip-toggle" type="button"
+            title="Expand video" aria-label="Expand video">▸</button>
+    <button class="video-pip-btn" id="video-pip-close" type="button"
+            title="Hide video" aria-label="Hide video">✕</button>
+  </div>
+  <div class="video-pip-body" id="video-pip-body" hidden>
+    <!-- iframe injected by JS on first expand to avoid loading the player up front -->
+  </div>
+</div>
+<button class="video-pip-launcher" id="video-pip-launcher" type="button"
+        title="Show Weekly Video Overview" aria-label="Show Weekly Video Overview">🎬</button>
+
 <!-- MAIN BODY -->
 <main class="memo-body">
 
-  <div class="intro-block">
-    <p>This topline report presents the highest-signal education policy intelligence — <strong>Action Score 3 (Actionable)</strong> items only — drawn from <strong>Whiteboard Advisors Review and Analysis</strong> over the last 7 days. States are shaded by the number of actionable items. Entries are organized by state and issue area.</p>
-    <p>Items marked <strong>Budget</strong> or <strong>Finance</strong> also display a budget direction indicator: <span style="background:#FDECEA;border:1px solid #F5A0A0;color:#8B1A1A;padding:1px 6px;border-radius:8px;font-size:11px;font-weight:700;">📉 Declining</span> &nbsp;<span style="background:#FFF8E1;border:1px solid #F5D870;color:#7A5800;padding:1px 6px;border-radius:8px;font-size:11px;font-weight:700;">➡ Flat</span> &nbsp;<span style="background:#E8F5E8;border:1px solid #80C880;color:#1A5C1A;padding:1px 6px;border-radius:8px;font-size:11px;font-weight:700;">📈 Improving</span>. Items with 🎬 include linked Whiteboard Advisors video commentary.</p>
-    <p style="margin-top:16px;">
-      <a class="dashboard-link" href="https://whiteboardadvisors.wistia.com/medias/9ajjofduyg" target="_blank" style="font-size:15px;">
-        🎬 Watch the Weekly Video Overview
-      </a>
-    </p>
-    <p style="margin-top:12px;">
-      <a class="dashboard-link" href="https://prod-useast-a.online.tableau.com/t/whiteboardinsights/views/TheEducationTrendReport/TheTrendReport" target="_blank">
-        Whiteboard Advisors Market Insights — The Education Trend Report
-      </a>
-    </p>
-  </div>
+  <!-- ════ OVERVIEW BLOCK — data leads, prose supports ════ -->
+  <section class="overview-block">
+    <div class="overview-eyebrow">
+      <span class="overview-period">📅 <!-- PYTHON:OVERVIEW_PERIOD -->April 22, 2026 – April 27, 2026<!-- PYTHON:END_OVERVIEW_PERIOD --></span>
+      <span class="overview-window">Rolling 7-Day Window · Action Score 3 (Actionable) only</span>
+    </div>
 
-  <!-- PYTHON:BEGIN_AUTOMATION_PANEL -->
-  <div class="automation-panel">
-    <span class="auto-label">Data Pipeline</span>
-    <div class="auto-divider"></div>
-    <div class="auto-badge">
-      <!-- PYTHON:LAST_GENERATED -->
-      📅 <strong>Latest Update:</strong> April 27, 2026
-      <!-- PYTHON:END_LAST_GENERATED -->
-    </div>
-    <div class="auto-divider"></div>
-    <div class="auto-badge">
-      <!-- PYTHON:DATA_SOURCE -->
-      📂 <strong>Source:</strong> Whiteboard Advisors Review and Analysis
-      <!-- PYTHON:END_DATA_SOURCE -->
-    </div>
-    <div class="auto-divider"></div>
-    <div class="auto-badge">
-      <!-- PYTHON:DATE_WINDOW -->
-      📆 <strong>Window:</strong> Rolling 7 days · latest item: April 27, 2026
-      <!-- PYTHON:END_DATE_WINDOW -->
-    </div>
-    <div class="auto-divider"></div>
-    <div class="auto-badge">
-      <!-- PYTHON:ROW_COUNT -->
-      📊 <strong>Rows Processed:</strong> 3846 total → 34 qualifying
-      <!-- PYTHON:END_ROW_COUNT -->
-    </div>
-    <div class="auto-panel-right">
-      <!-- PYTHON:GENERATION_METHOD -->
-      <span class="auto-status active"><span class="auto-dot"></span> Daily Updates Active</span>
-      <!-- PYTHON:END_GENERATION_METHOD -->
-      <span class="auto-script-tag">update_from_sheets.py</span>
-    </div>
-  </div>
-  <!-- PYTHON:END_AUTOMATION_PANEL -->
-
-  <!-- SUMMARY STATS -->
-  <div class="stats-bar">
-    <div class="stat-block">
-      <div class="stat-number total">34</div>
-      <div class="stat-label">Total Actionable Items</div>
-    </div>
-    <div class="stat-block top-issues-block">
-      <div class="stat-label" style="margin-bottom:8px;">Top Issues This Period</div>
-      <!-- TOP_ISSUES:BEGIN -->
-      <div class="top-issues-list">
-        <div class="top-issue"><span class="top-issue-rank">1</span><span class="top-issue-name">Budget</span><span class="top-issue-count">10</span></div>
-        <div class="top-issue"><span class="top-issue-rank">2</span><span class="top-issue-name">Screen time</span><span class="top-issue-count">5</span></div>
-        <div class="top-issue"><span class="top-issue-rank">3</span><span class="top-issue-name">Math</span><span class="top-issue-count">4</span></div>
-        <div class="top-issue"><span class="top-issue-rank">4</span><span class="top-issue-name">Teachers</span><span class="top-issue-count">3</span></div>
-        <div class="top-issue"><span class="top-issue-rank">5</span><span class="top-issue-name">School Choice</span><span class="top-issue-count">2</span></div>
+    <div class="overview-stats">
+      <div class="big-stat">
+        <div class="stat-number total">34</div>
+        <div class="stat-label">Actionable Items</div>
       </div>
-  <!-- TOP_ISSUES:END -->
+      <div class="big-stat">
+        <div class="stat-number states">15</div>
+        <div class="stat-label">States</div>
+      </div>
+      <div class="big-stat top-issues">
+        <div class="stat-label">Top Issues This Period</div>
+        <!-- TOP_ISSUES:BEGIN -->
+        <div class="top-issues-list">
+          <div class="top-issue"><span class="top-issue-rank">1</span><span class="top-issue-name">Budget</span><span class="top-issue-count">10</span></div>
+          <div class="top-issue"><span class="top-issue-rank">2</span><span class="top-issue-name">Screen time</span><span class="top-issue-count">5</span></div>
+          <div class="top-issue"><span class="top-issue-rank">3</span><span class="top-issue-name">Math</span><span class="top-issue-count">4</span></div>
+          <div class="top-issue"><span class="top-issue-rank">4</span><span class="top-issue-name">Teachers</span><span class="top-issue-count">3</span></div>
+          <div class="top-issue"><span class="top-issue-rank">5</span><span class="top-issue-name">School Choice</span><span class="top-issue-count">2</span></div>
+        </div>
+        <!-- TOP_ISSUES:END -->
+      </div>
     </div>
-    <div class="stat-block">
-      <div class="stat-number states">15</div>
-      <div class="stat-label">States Represented</div>
+
+    <div class="overview-prose">
+      <span class="prose-note">
+        Highest-signal K–12 policy items, drawn from <strong>Whiteboard Advisors Review and Analysis</strong>. Budget &amp; Finance items show direction:
+        <span class="badge-inline declining">📉 Declining</span>
+        <span class="badge-inline flat">➡ Flat</span>
+        <span class="badge-inline improving">📈 Improving</span>.
+        🎬 = video commentary attached.
+      </span>
+      <span class="prose-links">
+        <a class="dashboard-link" href="https://whiteboardadvisors.wistia.com/medias/9ajjofduyg" target="_blank">🎬 Weekly Video Overview</a>
+        <a class="dashboard-link" href="https://prod-useast-a.online.tableau.com/t/whiteboardinsights/views/TheEducationTrendReport/TheTrendReport" target="_blank">Trend Report Dashboard</a>
+      </span>
     </div>
-    <div class="stat-block">
-      <div class="stat-number" style="color:var(--hmh-navy-mid);">7</div>
-      <div class="stat-label">Days Covered</div>
-    </div>
-  </div>
+  </section>
 
   <!-- UPDATES:SECTION_LABEL -->
   <div class="section-label">State-by-State Briefings</div>
@@ -1086,8 +1513,8 @@
 
   <footer class="memo-footer">
     <span class="footer-brand">Whiteboard Advisors</span>
-    <span>Whiteboard Advisors</span>
-    <span><div style="margin-top:4px;">April 27, 2026 · Confidential· Confidential</div></span>
+    <span>Privileged &amp; Confidential</span>
+    <span><div style="margin-top:4px;">April 27, 2026 · Confidential</div></span>
   </footer>
 
 </main>
@@ -1106,10 +1533,22 @@ const MEMO_CONFIG = {
 };
 /* PYTHON:END_SCRIPT_CONFIG */
 
+/* ── WEEKLY VIDEO OVERVIEW CONFIG ─────────────────────── */
+const WEEKLY_VIDEO = {
+  // Wistia media ID for the Weekly Video Overview
+  wistiaId:    "9ajjofduyg",
+  // Embed iframe URL (autoplay disabled by default)
+  embedUrl:    "https://fast.wistia.net/embed/iframe/9ajjofduyg?seo=true&videoFoam=true",
+  // Public link for new-window pop-out
+  popoutUrl:   "https://whiteboardadvisors.wistia.com/medias/9ajjofduyg",
+  popoutW:     960,
+  popoutH:     600,
+};
+
 document.addEventListener("DOMContentLoaded", () => {
   document.title = `W/A Topline Intelligence — ${MEMO_CONFIG.latestItemDate}`;
 
-  // Back-to-top button
+  // ── Back-to-top button ─────────────────────────────────
   const btn = document.getElementById('backToTop');
   window.addEventListener('scroll', () => {
     btn.classList.toggle('visible', window.scrollY > 600);
@@ -1124,30 +1563,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Highlight active state in TOC on scroll
-  const sections = document.querySelectorAll('.state-section');
-  const chips    = document.querySelectorAll('.toc-chip');
-  const chipMap  = {};
-  chips.forEach(c => { chipMap[c.getAttribute('href')] = c; });
-
-  let ticking = false;
-  window.addEventListener('scroll', () => {
-    if (!ticking) {
-      window.requestAnimationFrame(() => {
-        let current = '';
-        sections.forEach(sec => {
-          const rect = sec.getBoundingClientRect();
-          if (rect.top <= 120) current = '#' + sec.id;
-        });
-        chips.forEach(c => c.classList.remove('active'));
-        if (current && chipMap[current]) chipMap[current].classList.add('active');
-        ticking = false;
-      });
-      ticking = true;
-    }
-  });
-
-  // Status badge
+  // ── Status badge ───────────────────────────────────────
   const statusEl = document.querySelector(".auto-status");
   if (statusEl) {
     if (MEMO_CONFIG.generationMethod === "auto") {
@@ -1160,6 +1576,453 @@ document.addEventListener("DOMContentLoaded", () => {
       statusEl.innerHTML = `<span class="auto-dot"></span> Manual Mode`;
     }
   }
+
+  // ════════════════════════════════════════════════════════════════════════
+  // UNIFIED FILTER SYSTEM (state + issue, AND-logic)
+  // Adapted from index-amplify.html — selects topline's .meta-chip.issue
+  // ════════════════════════════════════════════════════════════════════════
+  (function UnifiedFilterSystem() {
+    const allCards    = Array.from(document.querySelectorAll('.entry-card'));
+    const allSections = Array.from(document.querySelectorAll('.state-section'));
+    const tocChips    = Array.from(document.querySelectorAll('.toc-chip'));
+    const filterBar   = document.getElementById('issue-filter-bar');
+    const filterInner = filterBar ? filterBar.querySelector('.issue-filter-inner') : null;
+    const statusBar   = document.getElementById('filter-status-bar');
+    const statusInner = document.getElementById('filter-status-inner');
+    const clearAllBtn = document.getElementById('filter-clear-all');
+    const toggleBtn   = document.getElementById('filter-toggle-btn');
+    const navClearBtn = document.getElementById('nav-clear-btn');
+
+    if (!filterInner || allCards.length === 0) return;
+
+    let activeState = null;
+    let activeIssue = null;
+
+    // ── Index cards ────────────────────────────────────────
+    const cardMeta      = new Map();
+    const stateToIssues = {};
+
+    allCards.forEach(card => {
+      const section = card.closest('.state-section');
+      const rawId   = section ? section.id : null;
+      const stateId = rawId ? rawId.replace(/^state-/, '') : null;
+      // topline cards use <span class="meta-chip issue">…</span>
+      const issueEl = card.querySelector('.meta-chip.issue');
+      const issue   = issueEl ? issueEl.textContent.trim() : null;
+      cardMeta.set(card, { stateId, issue });
+      if (stateId && issue) {
+        if (!stateToIssues[stateId]) stateToIssues[stateId] = new Set();
+        stateToIssues[stateId].add(issue);
+      }
+    });
+
+    // ── Build issue chips dynamically, sorted by frequency ──
+    const globalIssueCounts = {};
+    allCards.forEach(card => {
+      const { issue } = cardMeta.get(card);
+      if (issue) globalIssueCounts[issue] = (globalIssueCounts[issue] || 0) + 1;
+    });
+    const sortedIssues = Object.keys(globalIssueCounts)
+      .sort((a, b) => globalIssueCounts[b] - globalIssueCounts[a]);
+
+    if (sortedIssues.length === 0) return;
+
+    const allIssueChip = filterInner.querySelector('.all-chip');
+    sortedIssues.forEach(issue => {
+      const chip = document.createElement('span');
+      chip.className = 'issue-chip';
+      chip.dataset.issue = issue;
+      chip.textContent = `${issue} (${globalIssueCounts[issue]})`;
+      filterInner.appendChild(chip);
+    });
+
+    // ── Collapse / expand the issue bar ─────────────────────
+    let filterCollapsed = true; // start collapsed
+    function setFilterCollapsed(collapsed) {
+      filterCollapsed = collapsed;
+      if (collapsed) {
+        // measure current height, then animate to 0
+        filterBar.style.maxHeight = filterBar.scrollHeight + 'px';
+        filterBar.getBoundingClientRect(); // reflow
+        filterBar.classList.add('collapsed');
+        filterBar.addEventListener('transitionend', function done() {
+          filterBar.removeEventListener('transitionend', done);
+          if (filterCollapsed) filterBar.style.maxHeight = '';
+        });
+      } else {
+        filterBar.classList.remove('collapsed');
+        const h = filterBar.scrollHeight;
+        filterBar.style.maxHeight = h + 'px';
+        filterBar.addEventListener('transitionend', function done() {
+          filterBar.removeEventListener('transitionend', done);
+          if (!filterCollapsed) filterBar.style.maxHeight = '';
+        });
+      }
+      if (toggleBtn) {
+        toggleBtn.classList.toggle('is-collapsed', collapsed);
+        toggleBtn.setAttribute('aria-expanded', String(!collapsed));
+        const chev = toggleBtn.querySelector('.toggle-chevron');
+        if (chev) chev.textContent = collapsed ? '▸' : '▾';
+      }
+      repositionBars();
+    }
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', () => setFilterCollapsed(!filterCollapsed));
+    }
+
+    // ── Sticky bar repositioning ────────────────────────────
+    function repositionBars() {
+      const tocEl = document.querySelector('.state-toc');
+      if (!tocEl) return;
+      const tocH    = tocEl.offsetHeight;
+      const filterH = filterCollapsed ? 0 : (filterBar ? filterBar.scrollHeight : 0);
+      if (filterBar)  filterBar.style.top  = tocH + 'px';
+      if (statusBar) statusBar.style.top   = (tocH + filterH) + 'px';
+    }
+    repositionBars();
+    window.addEventListener('resize', repositionBars);
+    if (statusBar) { statusBar.style.position = 'sticky'; statusBar.style.zIndex = '98'; }
+
+    // ── Apply both filters together (AND-logic) ──────────────
+    function applyFilters() {
+      const sId = activeState;
+      const iss = activeIssue;
+
+      // 1. Cards
+      allCards.forEach(card => {
+        const { stateId, issue } = cardMeta.get(card);
+        const stateMatch = !sId || stateId === sId;
+        const issueMatch = !iss || issue === iss;
+        card.classList.toggle('issue-hidden', !(stateMatch && issueMatch));
+      });
+
+      // 2. Hide empty state sections
+      allSections.forEach(sec => {
+        const hasVisible = sec.querySelectorAll('.entry-card:not(.issue-hidden)').length > 0;
+        sec.classList.toggle('issue-empty', !hasVisible);
+      });
+
+      // 3. TOC chip dim/active states
+      tocChips.forEach(chip => {
+        const chipId  = chip.dataset.state ||
+                        (chip.getAttribute('href') || '').replace('#','').replace(/^state-/, '');
+        chip.classList.toggle('state-active', chipId === sId);
+        if (iss) {
+          const stateIssues = stateToIssues[chipId] || new Set();
+          chip.classList.toggle('state-dimmed', !stateIssues.has(iss));
+        } else {
+          chip.classList.remove('state-dimmed');
+        }
+      });
+
+      // 4. Issue chip dim/active states + counts
+      const issueChips = filterInner.querySelectorAll('.issue-chip:not(.all-chip)');
+      issueChips.forEach(chip => {
+        const chipIssue = chip.dataset.issue;
+        chip.classList.toggle('active', chipIssue === iss);
+        if (sId) {
+          const stateIssues = stateToIssues[sId] || new Set();
+          if (stateIssues.has(chipIssue)) {
+            const count = allCards.filter(c => {
+              const m = cardMeta.get(c);
+              return m.stateId === sId && m.issue === chipIssue;
+            }).length;
+            chip.textContent = `${chipIssue} (${count})`;
+            chip.classList.remove('issue-dimmed');
+          } else {
+            chip.textContent = `${chipIssue} (0)`;
+            chip.classList.add('issue-dimmed');
+          }
+        } else {
+          chip.textContent = `${chipIssue} (${globalIssueCounts[chipIssue]})`;
+          chip.classList.remove('issue-dimmed');
+        }
+      });
+      if (allIssueChip) allIssueChip.classList.toggle('active', !iss);
+
+      // 5. Status bar + toggle dot
+      updateStatusBar();
+      if (toggleBtn)   toggleBtn.classList.toggle('has-filter', !!(sId || iss));
+      if (navClearBtn) navClearBtn.classList.toggle('visible', !!(sId || iss));
+
+      // 6. TOC label text
+      const labelText = document.querySelector('.toc-label-text');
+      if (labelText) labelText.textContent = sId ? 'State Filter Active' : 'Jump to State';
+    }
+
+    function updateStatusBar() {
+      if (!statusBar || !statusInner) return;
+      const hasFilter = activeState || activeIssue;
+      statusBar.style.display = hasFilter ? '' : 'none';
+      repositionBars();
+      if (!hasFilter) return;
+
+      Array.from(statusInner.children).forEach(child => {
+        if (!child.classList.contains('filter-clear-all')) child.remove();
+      });
+      const label = document.createElement('span');
+      label.className = 'status-label';
+      label.textContent = 'Showing:';
+      statusInner.insertBefore(label, clearAllBtn);
+      if (activeIssue) {
+        const tag = document.createElement('span');
+        tag.className = 'status-tag';
+        tag.textContent = activeIssue;
+        statusInner.insertBefore(tag, clearAllBtn);
+      }
+      if (activeIssue && activeState) {
+        const sep = document.createElement('span');
+        sep.className = 'status-label';
+        sep.textContent = 'in';
+        statusInner.insertBefore(sep, clearAllBtn);
+      }
+      if (activeState) {
+        const chip = tocChips.find(c =>
+          (c.dataset.state || (c.getAttribute('href')||'').replace('#','').replace(/^state-/, '')) === activeState
+        );
+        const stateName = chip ? chip.getAttribute('title').split('—')[0].trim() : activeState;
+        const tag = document.createElement('span');
+        tag.className = 'status-tag state-tag';
+        tag.textContent = stateName;
+        statusInner.insertBefore(tag, clearAllBtn);
+      }
+      const visCount = allCards.filter(c => !c.classList.contains('issue-hidden')).length;
+      const cLabel = document.createElement('span');
+      cLabel.className = 'status-label';
+      cLabel.textContent = `— ${visCount} item${visCount !== 1 ? 's' : ''}`;
+      statusInner.insertBefore(cLabel, clearAllBtn);
+    }
+
+    // ── Wire TOC chip clicks ─────────────────────────────────
+    tocChips.forEach(chip => {
+      chip.addEventListener('click', e => {
+        e.preventDefault();
+        const chipId = chip.dataset.state ||
+                       (chip.getAttribute('href')||'').replace('#','').replace(/^state-/, '');
+        if (activeState === chipId) {
+          // Second click on the same chip = clear filter and scroll to that section
+          activeState = null;
+          applyFilters();
+          const target = document.getElementById('state-' + chipId);
+          if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+          activeState = chipId;
+          applyFilters();
+        }
+      });
+    });
+
+    // ── Wire issue chip clicks ───────────────────────────────
+    const issueChipsAll = filterInner.querySelectorAll('.issue-chip:not(.all-chip)');
+    if (allIssueChip) {
+      allIssueChip.addEventListener('click', () => { activeIssue = null; applyFilters(); });
+    }
+    issueChipsAll.forEach(chip => {
+      chip.addEventListener('click', () => {
+        const clicked = chip.dataset.issue;
+        activeIssue = (activeIssue === clicked) ? null : clicked;
+        applyFilters();
+      });
+    });
+
+    // ── Clear-all buttons ────────────────────────────────────
+    if (clearAllBtn) {
+      clearAllBtn.addEventListener('click', () => {
+        activeState = null; activeIssue = null; applyFilters();
+      });
+    }
+    if (navClearBtn) {
+      navClearBtn.addEventListener('click', () => {
+        activeState = null; activeIssue = null; applyFilters();
+      });
+    }
+
+    // Initial render (collapsed)
+    filterBar.style.transition = 'none';
+    setFilterCollapsed(true);
+    requestAnimationFrame(() => { filterBar.style.transition = ''; });
+    applyFilters();
+
+  })();
+
+  // ════════════════════════════════════════════════════════════════════════
+  // SCROLL-SPY: highlight active state chip on scroll (only when no manual
+  // state filter is active — managed by .state-active class)
+  // ════════════════════════════════════════════════════════════════════════
+  const sections = Array.from(document.querySelectorAll('.state-section'));
+  const allChips = Array.from(document.querySelectorAll('.toc-chip'));
+  const chipMap  = {};
+  allChips.forEach(c => {
+    const anchor = c.dataset.state ||
+                   (c.getAttribute('href')||'').replace('#','').replace(/^state-/, '');
+    chipMap['state-' + anchor] = c;
+  });
+
+  let ticking = false;
+  window.addEventListener('scroll', () => {
+    if (!ticking) {
+      window.requestAnimationFrame(() => {
+        let current = '';
+        sections.forEach(sec => {
+          const rect = sec.getBoundingClientRect();
+          if (rect.top <= 140 && !sec.classList.contains('issue-empty')) current = sec.id;
+        });
+        const anyActive = allChips.some(c => c.classList.contains('state-active'));
+        if (!anyActive) {
+          allChips.forEach(c => c.classList.remove('active'));
+          if (current && chipMap[current]) chipMap[current].classList.add('active');
+        }
+        ticking = false;
+      });
+      ticking = true;
+    }
+  });
+
+  // ════════════════════════════════════════════════════════════════════════
+  // WEEKLY VIDEO OVERVIEW — collapsible PiP widget with pop-out
+  //   • Starts collapsed (header bar only) so the iframe doesn't load up front
+  //   • ▸/▾ toggle expands/collapses the player
+  //   • ⧉ pop-out opens the public Wistia page in a sized new window
+  //   • ✕ closes the widget; a floating launcher button reopens it
+  //   • Header is draggable so it doesn't cover content the user wants to read
+  // ════════════════════════════════════════════════════════════════════════
+  (function VideoPiPWidget() {
+    const pip       = document.getElementById('video-pip');
+    const launcher  = document.getElementById('video-pip-launcher');
+    const header    = document.getElementById('video-pip-header');
+    const body      = document.getElementById('video-pip-body');
+    const toggleBtn = document.getElementById('video-pip-toggle');
+    const popoutBtn = document.getElementById('video-pip-popout');
+    const closeBtn  = document.getElementById('video-pip-close');
+
+    if (!pip || !launcher || !body) return;
+
+    let iframeLoaded = false;
+    function ensureIframe() {
+      if (iframeLoaded) return;
+      const iframe = document.createElement('iframe');
+      iframe.src         = WEEKLY_VIDEO.embedUrl;
+      iframe.title       = 'Weekly Video Overview';
+      iframe.allow       = 'autoplay; fullscreen; picture-in-picture';
+      iframe.allowFullscreen = true;
+      iframe.referrerPolicy = 'no-referrer-when-downgrade';
+      body.appendChild(iframe);
+      iframeLoaded = true;
+    }
+
+    function setExpanded(expanded) {
+      if (expanded) {
+        ensureIframe();
+        pip.classList.remove('collapsed');
+        body.hidden = false;
+        toggleBtn.textContent = '▾';
+        toggleBtn.title = 'Collapse video';
+        toggleBtn.setAttribute('aria-label', 'Collapse video');
+      } else {
+        pip.classList.add('collapsed');
+        body.hidden = true;
+        toggleBtn.textContent = '▸';
+        toggleBtn.title = 'Expand video';
+        toggleBtn.setAttribute('aria-label', 'Expand video');
+      }
+    }
+
+    // Toggle expand/collapse — clicking the header (but not its buttons) also toggles
+    toggleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setExpanded(pip.classList.contains('collapsed'));
+    });
+    header.addEventListener('click', (e) => {
+      // Ignore clicks on header buttons; only toggle on bare-header click
+      if (e.target.closest('.video-pip-btn')) return;
+      // Ignore if a drag actually moved the widget
+      if (header.dataset.dragged === '1') {
+        header.dataset.dragged = '';
+        return;
+      }
+      setExpanded(pip.classList.contains('collapsed'));
+    });
+
+    // Pop-out: open the Wistia page in a sized new window
+    popoutBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const w = WEEKLY_VIDEO.popoutW, h = WEEKLY_VIDEO.popoutH;
+      const left = Math.max(0, (window.screen.availWidth  - w) / 2);
+      const top  = Math.max(0, (window.screen.availHeight - h) / 2);
+      const features = `popup=yes,width=${w},height=${h},left=${left},top=${top},` +
+                       `noopener,noreferrer,resizable,scrollbars=yes`;
+      const popup = window.open(WEEKLY_VIDEO.popoutUrl, 'wa_weekly_video', features);
+      // Browsers that block popups will return null — fall back to a normal new tab
+      if (!popup) {
+        window.open(WEEKLY_VIDEO.popoutUrl, '_blank', 'noopener,noreferrer');
+        return;
+      }
+      // Once popped out, hide the in-page widget and surface the launcher so the
+      // user can bring it back without reloading
+      pip.classList.add('hidden');
+      launcher.classList.add('visible');
+    });
+
+    // Close → hide widget, show launcher
+    closeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      pip.classList.add('hidden');
+      launcher.classList.add('visible');
+    });
+
+    // Launcher → restore widget (collapsed, so iframe doesn't auto-load again)
+    launcher.addEventListener('click', () => {
+      pip.classList.remove('hidden');
+      launcher.classList.remove('visible');
+      setExpanded(false);
+    });
+
+    // ── Drag the widget by its header ─────────────────────
+    let dragState = null;
+    header.addEventListener('mousedown', (e) => {
+      if (e.target.closest('.video-pip-btn')) return;
+      const rect = pip.getBoundingClientRect();
+      dragState = {
+        startX: e.clientX,
+        startY: e.clientY,
+        origLeft: rect.left,
+        origTop:  rect.top,
+        moved: false,
+      };
+      // Switch to absolute pixel positioning so movement is precise
+      pip.style.left   = rect.left + 'px';
+      pip.style.top    = rect.top  + 'px';
+      pip.style.right  = 'auto';
+      pip.style.bottom = 'auto';
+      e.preventDefault();
+    });
+    window.addEventListener('mousemove', (e) => {
+      if (!dragState) return;
+      const dx = e.clientX - dragState.startX;
+      const dy = e.clientY - dragState.startY;
+      if (Math.abs(dx) + Math.abs(dy) > 3) dragState.moved = true;
+      // Clamp inside the viewport
+      const rect = pip.getBoundingClientRect();
+      const newLeft = Math.min(
+        Math.max(0, dragState.origLeft + dx),
+        window.innerWidth  - rect.width
+      );
+      const newTop  = Math.min(
+        Math.max(0, dragState.origTop  + dy),
+        window.innerHeight - rect.height
+      );
+      pip.style.left = newLeft + 'px';
+      pip.style.top  = newTop  + 'px';
+    });
+    window.addEventListener('mouseup', () => {
+      if (!dragState) return;
+      if (dragState.moved) header.dataset.dragged = '1';
+      dragState = null;
+    });
+
+    // Start collapsed (header bar only)
+    setExpanded(false);
+  })();
 });
 </script>
 </body>
