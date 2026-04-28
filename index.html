@@ -330,7 +330,7 @@
   .entry-card.issue-hidden { display: none; }
   .state-section.issue-empty { display: none; }
 
-  /* ── WEEKLY VIDEO OVERVIEW WIDGET (PiP) ─────────────── */
+  /* ── Video Overview WIDGET (PiP) ─────────────── */
   .video-pip {
     position: fixed; bottom: 28px; right: 80px;
     width: 320px; height: auto;
@@ -982,11 +982,11 @@
   </div>
 </div>
 
-<!-- WEEKLY VIDEO OVERVIEW — collapsible / pop-out PiP widget -->
-<div class="video-pip collapsed" id="video-pip" role="region" aria-label="Weekly Video Overview">
+<!-- Video Overview — collapsible / pop-out PiP widget -->
+<div class="video-pip collapsed" id="video-pip" role="region" aria-label="Video Overview">
   <div class="video-pip-header" id="video-pip-header">
     <span class="video-pip-icon">🎬</span>
-    <span class="video-pip-title">Weekly Video Overview</span>
+    <span class="video-pip-title">Video Overview</span>
     <button class="video-pip-btn" id="video-pip-popout" type="button"
             title="Open in new window" aria-label="Open video in new window">⧉</button>
     <button class="video-pip-btn" id="video-pip-toggle" type="button"
@@ -999,7 +999,7 @@
   </div>
 </div>
 <button class="video-pip-launcher" id="video-pip-launcher" type="button"
-        title="Show Weekly Video Overview" aria-label="Show Weekly Video Overview">🎬</button>
+        title="Show Video Overview" aria-label="Show Video Overview">🎬</button>
 
 <!-- MAIN BODY -->
 <main class="memo-body">
@@ -1043,7 +1043,7 @@
         🎬 = video commentary attached.
       </span>
       <span class="prose-links">
-        <a class="dashboard-link" href="https://whiteboardadvisors.wistia.com/medias/9ajjofduyg" target="_blank">🎬 Weekly Video Overview</a>
+        <a class="dashboard-link" href="https://whiteboardadvisors.wistia.com/medias/9ajjofduyg" target="_blank">🎬 Video Overview</a>
         <a class="dashboard-link" href="https://prod-useast-a.online.tableau.com/t/whiteboardinsights/views/TheEducationTrendReport/TheTrendReport" target="_blank">Trend Report Dashboard</a>
         <button type="button" class="contact-inline" data-open-contact>Email David</button>
       </span>
@@ -1975,9 +1975,9 @@ const MEMO_CONFIG = {
 };
 /* PYTHON:END_SCRIPT_CONFIG */
 
-/* ── WEEKLY VIDEO OVERVIEW CONFIG ─────────────────────── */
+/* ── Video Overview CONFIG ─────────────────────── */
 const WEEKLY_VIDEO = {
-  // Wistia media ID for the Weekly Video Overview
+  // Wistia media ID for the Video Overview
   wistiaId:    "9ajjofduyg",
   // Embed iframe URL (autoplay disabled by default)
   embedUrl:    "https://fast.wistia.net/embed/iframe/9ajjofduyg?seo=true&videoFoam=true",
@@ -2321,7 +2321,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // ════════════════════════════════════════════════════════════════════════
-  // WEEKLY VIDEO OVERVIEW — collapsible PiP widget with pop-out
+  // Video Overview — collapsible PiP widget with pop-out
   //   • Starts collapsed (header bar only) so the iframe doesn't load up front
   //   • ▸/▾ toggle expands/collapses the player
   //   • ⧉ pop-out opens the public Wistia page in a sized new window
@@ -2344,7 +2344,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (iframeLoaded) return;
       const iframe = document.createElement('iframe');
       iframe.src         = WEEKLY_VIDEO.embedUrl;
-      iframe.title       = 'Weekly Video Overview';
+      iframe.title       = 'Video Overview';
       iframe.allow       = 'autoplay; fullscreen; picture-in-picture';
       iframe.allowFullscreen = true;
       iframe.referrerPolicy = 'no-referrer-when-downgrade';
