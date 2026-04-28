@@ -428,6 +428,187 @@
     100% { transform: scale(1.4);  opacity: 0; }
   }
 
+  /* ════════════════════════════════════════════════════════════════════════
+     ── ASK DAVID — floating contact button + modal ─────────────────────────
+     Bottom-left FAB opens a composer that ships a mailto: to
+     david@whiteboardadvisors.com. Inline [data-open-contact] triggers also
+     open the same modal. Adapts to whichever accent the page randomized.
+     ════════════════════════════════════════════════════════════════════════ */
+  .contact-fab {
+    position: fixed; bottom: 28px; left: 28px;
+    display: inline-flex; align-items: center; gap: 9px;
+    padding: 9px 16px 9px 11px;
+    background: var(--hmh-navy);
+    color: white;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-left: 3px solid var(--hmh-accent);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.28);
+    cursor: pointer;
+    font-family: 'Source Serif 4', serif;
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    z-index: 96;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s;
+  }
+  .contact-fab:hover {
+    background: var(--hmh-accent);
+    border-left-color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(var(--hmh-accent-rgb), 0.35);
+  }
+  .contact-fab:focus-visible { outline: 2px solid var(--hmh-accent); outline-offset: 2px; }
+  .contact-fab .fab-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--hmh-accent);
+    color: white; font-size: 12px;
+    flex-shrink: 0;
+    transition: background 0.15s;
+  }
+  .contact-fab:hover .fab-icon { background: white; color: var(--hmh-accent); }
+
+  /* Inline triggers (intro / footer): styled like a subtle text link */
+  .contact-inline {
+    display: inline-flex; align-items: center; gap: 5px;
+    color: var(--hmh-accent-dark);
+    text-decoration: none;
+    font-weight: 600;
+    border-bottom: 1px solid rgba(var(--hmh-accent-rgb), 0.35);
+    padding-bottom: 1px;
+    transition: color 0.15s, border-color 0.15s;
+    cursor: pointer;
+    background: none; border-left: 0; border-right: 0; border-top: 0;
+    font-family: inherit; font-size: inherit;
+  }
+  .contact-inline:hover { color: var(--hmh-accent); border-bottom-color: var(--hmh-accent); }
+  .contact-inline::before { content: '✉'; font-size: 13px; line-height: 1; }
+
+  /* Modal overlay */
+  .contact-modal {
+    position: fixed; inset: 0;
+    z-index: 200;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+  }
+  .contact-modal[hidden] { display: none; }
+  .contact-modal-backdrop {
+    position: absolute; inset: 0;
+    background: rgba(13,27,46,0.62);
+    backdrop-filter: blur(2px);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  .contact-modal.open .contact-modal-backdrop { opacity: 1; }
+  .contact-modal-card {
+    position: relative;
+    width: 100%; max-width: 520px;
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+    background: var(--card-bg);
+    border-top: 3px solid var(--hmh-accent);
+    box-shadow: 0 24px 60px rgba(0,0,0,0.4);
+    transform: translateY(12px) scale(0.98);
+    opacity: 0;
+    transition: transform 0.22s ease, opacity 0.22s ease;
+    font-family: 'Source Serif 4', serif;
+  }
+  .contact-modal.open .contact-modal-card { transform: translateY(0) scale(1); opacity: 1; }
+  .contact-modal-header {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 22px 24px 16px;
+    border-bottom: 1px solid var(--border-light);
+  }
+  .contact-modal-header > div:first-child { flex: 1; min-width: 0; }
+  .contact-modal-header h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px; font-weight: 700; color: var(--text-primary);
+    line-height: 1.2; margin: 0 0 4px 0;
+    letter-spacing: -0.01em;
+  }
+  .contact-modal-header p {
+    font-family: 'Source Serif 4', serif;
+    font-size: 12px; color: var(--text-muted);
+    letter-spacing: 0.04em; margin: 0;
+  }
+  .contact-close {
+    background: transparent; border: 1px solid var(--border-light);
+    width: 30px; height: 30px;
+    color: var(--text-muted);
+    font-size: 14px; line-height: 1;
+    cursor: pointer; flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .contact-close:hover { background: var(--hmh-accent); color: white; border-color: var(--hmh-accent); }
+  .contact-form {
+    display: flex; flex-direction: column; gap: 14px;
+    padding: 18px 24px 22px;
+  }
+  .contact-field { display: flex; flex-direction: column; gap: 5px; }
+  .contact-label {
+    font-family: 'Source Serif 4', serif;
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .contact-form input[type="text"],
+  .contact-form textarea {
+    width: 100%;
+    padding: 9px 12px;
+    background: white;
+    border: 1px solid var(--border-light);
+    color: var(--text-primary);
+    font-family: 'Source Serif 4', serif;
+    font-size: 14px; line-height: 1.55;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    resize: vertical;
+  }
+  .contact-form input[type="text"]:focus,
+  .contact-form textarea:focus {
+    outline: none;
+    border-color: var(--hmh-accent);
+    box-shadow: 0 0 0 3px rgba(var(--hmh-accent-rgb), 0.18);
+  }
+  .contact-form textarea { min-height: 110px; }
+  .contact-checkbox {
+    display: flex; align-items: flex-start; gap: 8px;
+    font-size: 12.5px; color: var(--text-secondary);
+    line-height: 1.4; cursor: pointer; user-select: none;
+  }
+  .contact-checkbox input { margin-top: 2px; cursor: pointer; flex-shrink: 0; accent-color: var(--hmh-accent); }
+  .contact-actions {
+    display: flex; flex-wrap: wrap; gap: 10px;
+    margin-top: 4px;
+  }
+  .contact-btn-primary,
+  .contact-btn-secondary {
+    flex: 1 1 180px;
+    padding: 10px 16px;
+    font-family: 'Source Serif 4', serif;
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .contact-btn-primary {
+    background: var(--hmh-accent); color: white; border: 1px solid var(--hmh-accent);
+  }
+  .contact-btn-primary:hover { background: var(--hmh-accent-dark); border-color: var(--hmh-accent-dark); }
+  .contact-btn-secondary {
+    background: white; color: var(--text-primary); border: 1px solid var(--border-light);
+  }
+  .contact-btn-secondary:hover { background: var(--page-bg); border-color: var(--text-muted); }
+  .contact-status {
+    font-family: 'Source Serif 4', serif;
+    font-size: 11px; letter-spacing: 0.04em;
+    color: var(--text-muted);
+    min-height: 16px;
+    margin-top: -2px;
+  }
+  .contact-status.success { color: #1a5c1a; }
+  .contact-status.error   { color: #8b1a1a; }
+
   /* ── BODY ────────────────────────────────────────── */
   .memo-body { max-width: 960px; margin: 0 auto; padding: 52px 48px 80px; }
   /* ── OVERVIEW BLOCK (merges intro + stats; data leads, prose follows) ── */
@@ -693,11 +874,21 @@
     .auto-divider { display: none; }
     .video-pip { width: calc(100vw - 32px); right: 16px; bottom: 80px; }
     .video-pip-launcher { right: 16px; }
+    .contact-fab {
+      left: 16px; bottom: 16px;
+      padding: 8px 13px 8px 9px;
+    }
+    .contact-fab .fab-icon { width: 20px; height: 20px; font-size: 11px; }
+    .contact-fab { font-size: 10px; }
+    .contact-modal { padding: 12px; }
+    .contact-modal-header { padding: 18px 18px 14px; }
+    .contact-form { padding: 14px 18px 18px; }
   }
   @media print {
     .automation-panel, .state-toc, .back-to-top,
     .issue-filter-bar, .filter-status-bar,
-    .video-pip, .video-pip-launcher { display: none !important; }
+    .video-pip, .video-pip-launcher,
+    .contact-fab, .contact-modal { display: none !important; }
     body { background: white; font-size: 13px; }
     .memo-body { padding: 24px 0; }
     .entry-card { break-inside: avoid; }
@@ -849,6 +1040,7 @@
       <span class="prose-links">
         <a class="dashboard-link" href="https://whiteboardadvisors.wistia.com/medias/9ajjofduyg" target="_blank">🎬 Weekly Video Overview</a>
         <a class="dashboard-link" href="https://prod-useast-a.online.tableau.com/t/whiteboardinsights/views/TheEducationTrendReport/TheTrendReport" target="_blank">Trend Report Dashboard</a>
+        <button type="button" class="contact-inline" data-open-contact>Email David</button>
       </span>
     </div>
   </section>
@@ -1514,10 +1706,61 @@
   <footer class="memo-footer">
     <span class="footer-brand">Whiteboard Advisors</span>
     <span>Privileged &amp; Confidential</span>
-    <span><div style="margin-top:4px;">April 27, 2026 · Confidential</div></span>
+    <span style="display:flex;align-items:center;gap:14px;text-transform:none;letter-spacing:0;">
+      <button type="button" class="contact-inline" data-open-contact>Email David</button>
+      <span style="margin-top:4px;">April 27, 2026 · Confidential</span>
+    </span>
   </footer>
 
 </main>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     ASK DAVID — floating contact button + modal
+══════════════════════════════════════════════════════════════════════════════ -->
+<button class="contact-fab" id="contact-fab" type="button"
+        title="Send David a question or request" aria-label="Send David a question or request">
+  <span class="fab-icon" aria-hidden="true">✉</span>
+  <span>Ask David</span>
+</button>
+
+<div class="contact-modal" id="contact-modal" role="dialog" aria-modal="true"
+     aria-labelledby="contact-modal-title" hidden>
+  <div class="contact-modal-backdrop" data-close></div>
+  <div class="contact-modal-card" role="document">
+    <header class="contact-modal-header">
+      <div>
+        <h2 id="contact-modal-title">Send David a note</h2>
+        <p>david@whiteboardadvisors.com</p>
+      </div>
+      <button class="contact-close" type="button" data-close aria-label="Close dialog">✕</button>
+    </header>
+    <form class="contact-form" id="contact-form" novalidate>
+      <label class="contact-field">
+        <span class="contact-label">Subject</span>
+        <input type="text" id="contact-subject" name="subject"
+               value="W/A Topline — " required maxlength="180" autocomplete="off">
+      </label>
+      <label class="contact-field">
+        <span class="contact-label">Your message</span>
+        <textarea id="contact-message" name="message" rows="5"
+                  placeholder="Hi David — I wanted to ask about…" required></textarea>
+      </label>
+      <label class="contact-checkbox">
+        <input type="checkbox" id="contact-include-context" checked>
+        <span>Append report context (period &amp; current filter view) to the message</span>
+      </label>
+      <div class="contact-actions">
+        <button type="button" class="contact-btn-secondary" id="contact-copy">
+          📋 Copy to Clipboard
+        </button>
+        <button type="submit" class="contact-btn-primary">
+          ✉ Open in Email →
+        </button>
+      </div>
+      <div class="contact-status" id="contact-status" aria-live="polite"></div>
+    </form>
+  </div>
+</div>
 
 <button class="back-to-top" id="backToTop" title="Back to top">↑</button>
 
@@ -2022,6 +2265,152 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Start collapsed (header bar only)
     setExpanded(false);
+  })();
+
+  // ════════════════════════════════════════════════════════════════════════
+  // CONTACT MODAL — "Ask David"
+  //   • Opens via the floating "Ask David" FAB or any inline [data-open-contact]
+  //   • Subject defaults to "W/A Topline — " (editable)
+  //   • Optional checkbox appends report period + active filter context
+  //   • "Open in Email" → mailto: launch (works with default mail client)
+  //   • "Copy to Clipboard" → puts a formatted email on the clipboard for webmail
+  // ════════════════════════════════════════════════════════════════════════
+  (function ContactModal() {
+    const fab     = document.getElementById('contact-fab');
+    const modal   = document.getElementById('contact-modal');
+    const card    = modal ? modal.querySelector('.contact-modal-card') : null;
+    const subject = document.getElementById('contact-subject');
+    const message = document.getElementById('contact-message');
+    const include = document.getElementById('contact-include-context');
+    const form    = document.getElementById('contact-form');
+    const copyBtn = document.getElementById('contact-copy');
+    const status  = document.getElementById('contact-status');
+    if (!fab || !modal || !form) return;
+
+    const RECIPIENT     = 'david@whiteboardadvisors.com';
+    const REPORT_TITLE  = 'W/A Topline Intelligence';
+    const REPORT_PERIOD = (function () {
+      // Pull the live date range from the masthead so it stays accurate
+      const tag = document.querySelector('.date-tag');
+      return tag ? tag.textContent.trim() : '';
+    })();
+
+    function open() {
+      modal.hidden = false;
+      requestAnimationFrame(() => modal.classList.add('open'));
+      document.body.style.overflow = 'hidden';
+      setTimeout(() => message && message.focus(), 80);
+    }
+    function close() {
+      modal.classList.remove('open');
+      setTimeout(() => {
+        modal.hidden = true;
+        if (status) { status.textContent = ''; status.className = 'contact-status'; }
+      }, 200);
+      document.body.style.overflow = '';
+    }
+
+    // Build a context block (report + active filters) for the email signature
+    function getContext() {
+      if (!include || !include.checked) return '';
+      const lines = ['', '— — —', `${REPORT_TITLE}${REPORT_PERIOD ? ' · ' + REPORT_PERIOD : ''}`];
+      const stateActive = document.querySelector('.toc-chip.state-active');
+      if (stateActive) {
+        const stateName = (stateActive.getAttribute('title') || '').split('—')[0].trim()
+                       || stateActive.textContent.trim();
+        lines.push(`Filtered to state: ${stateName}`);
+      }
+      const issueActive = document.querySelector('.issue-chip.active:not(.all-chip)');
+      if (issueActive && issueActive.dataset.issue) {
+        lines.push(`Filtered to issue: ${issueActive.dataset.issue}`);
+      }
+      const visible = document.querySelectorAll('.entry-card:not(.issue-hidden)').length;
+      if (visible) lines.push(`(${visible} item${visible === 1 ? '' : 's'} visible at time of writing)`);
+      return lines.join('\n');
+    }
+
+    function buildEmail() {
+      const subj = (subject.value || '').trim() || `${REPORT_TITLE} — Question`;
+      const body = ((message.value || '').trim()) + getContext();
+      return { subj, body };
+    }
+    function setStatus(text, kind) {
+      if (!status) return;
+      status.textContent = text;
+      status.className = 'contact-status' + (kind ? ' ' + kind : '');
+    }
+
+    // Open triggers — floating FAB and any inline "Email David" link
+    fab.addEventListener('click', open);
+    document.querySelectorAll('[data-open-contact]').forEach(el => {
+      el.addEventListener('click', e => { e.preventDefault(); open(); });
+    });
+
+    // Close triggers — backdrop, X button, Escape key
+    modal.querySelectorAll('[data-close]').forEach(el => el.addEventListener('click', close));
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && !modal.hidden) close();
+    });
+
+    // Basic focus trap — Tab / Shift+Tab cycle inside the card
+    modal.addEventListener('keydown', e => {
+      if (e.key !== 'Tab' || modal.hidden) return;
+      const focusables = card.querySelectorAll(
+        'button, input, textarea, select, [tabindex]:not([tabindex="-1"])'
+      );
+      if (!focusables.length) return;
+      const first = focusables[0], last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    });
+
+    // Submit → open user's default mail client with pre-filled message
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      if (!message.value.trim()) {
+        message.focus();
+        setStatus('Please write a message first.', 'error');
+        return;
+      }
+      const { subj, body } = buildEmail();
+      const url = 'mailto:' + RECIPIENT
+                + '?subject=' + encodeURIComponent(subj)
+                + '&body='    + encodeURIComponent(body);
+      window.location.href = url;
+      setStatus('✓ Opened your email client. If nothing happened, try Copy to Clipboard.', 'success');
+    });
+
+    // Copy formatted email to clipboard — fallback for webmail users
+    copyBtn.addEventListener('click', async () => {
+      if (!message.value.trim()) {
+        message.focus();
+        setStatus('Please write a message first.', 'error');
+        return;
+      }
+      const { subj, body } = buildEmail();
+      const text = `To: ${RECIPIENT}\nSubject: ${subj}\n\n${body}`;
+      let ok = false;
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(text);
+          ok = true;
+        }
+      } catch (err) { /* fall through to legacy fallback */ }
+      if (!ok) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed'; ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        try { ok = document.execCommand('copy'); } catch (err) { ok = false; }
+        document.body.removeChild(ta);
+      }
+      setStatus(
+        ok ? '✓ Copied to clipboard. Paste it into your email tool.'
+           : "Couldn't copy automatically — please select the modal text and copy manually.",
+        ok ? 'success' : 'error'
+      );
+    });
   })();
 });
 </script>
