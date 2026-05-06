@@ -1,2793 +1,582 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Whiteboard Advisors — Topline Intelligence Report</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,300;1,8..60,400&display=swap" rel="stylesheet" />
-<script>
-/* ── ACCENT COLOR RANDOMIZER ─────────────────────────────────────────────────
-   Picks a different blue/teal/indigo accent on each page load.
-   Runs synchronously in <head> before paint to avoid a color flash.
-   To pin a color, set ?accent=<name> in the URL (e.g., ?accent=teal).
-   Available names: cerulean, sky, cobalt, azure, teal, indigo, cyan, slate.
-─────────────────────────────────────────────────────────────────────────────*/
-(function () {
-  var PALETTES = [
-    { name: 'cerulean', accent: '#2A7DC9', dark: '#1A5FA0', rgb: '42,125,201',  tint: '#E8F2FB' },
-    { name: 'sky',      accent: '#0EA5E9', dark: '#0369A1', rgb: '14,165,233',  tint: '#E0F4FE' },
-    { name: 'cobalt',   accent: '#2563EB', dark: '#1D4ED8', rgb: '37,99,235',   tint: '#E5EEFD' },
-    { name: 'azure',    accent: '#3B82F6', dark: '#1E40AF', rgb: '59,130,246',  tint: '#E8F0FE' },
-    { name: 'teal',     accent: '#0E9F8E', dark: '#0F766E', rgb: '14,159,142',  tint: '#DEF5F1' },
-    { name: 'indigo',   accent: '#5B6FE8', dark: '#4338CA', rgb: '91,111,232',  tint: '#ECEDFE' },
-    { name: 'cyan',     accent: '#0891B2', dark: '#155E75', rgb: '8,145,178',   tint: '#DEF3F8' },
-    { name: 'slate',    accent: '#475BD5', dark: '#3730A3', rgb: '71,91,213',   tint: '#E7E9FB' },
-  ];
-  // Allow ?accent=name in the URL to pin a color (handy for screenshots / QA)
-  var pinned = null;
-  try {
-    var qs = new URLSearchParams(window.location.search).get('accent');
-    if (qs) pinned = PALETTES.find(function(p){ return p.name === qs.toLowerCase(); }) || null;
-  } catch (e) { /* old browser — fall through to random */ }
-  var p = pinned || PALETTES[Math.floor(Math.random() * PALETTES.length)];
-  var r = document.documentElement;
-  r.style.setProperty('--hmh-accent',      p.accent);
-  r.style.setProperty('--hmh-accent-dark', p.dark);
-  r.style.setProperty('--hmh-accent-rgb',  p.rgb);
-  r.style.setProperty('--hmh-accent-tint', p.tint);
-  r.style.setProperty('--hmh-pink',        p.accent);  /* legacy alias */
-  r.style.setProperty('--hmh-orange',      p.dark);    /* legacy alias */
-  r.dataset.accent = p.name;
-})();
-</script>
-<style>
-  :root {
-    /* ── W/A accent palette (overridden at load by JS color randomizer) ── */
-    /* Default = cerulean. JS picks a different blue/teal/indigo on each refresh. */
-    --hmh-pink:         #2A7DC9;
-    --hmh-orange:       #1A5FA0;
-    --hmh-accent:       #2A7DC9;
-    --hmh-accent-dark:  #1A5FA0;
-    --hmh-accent-rgb:   42, 125, 201;     /* RGB tuple for rgba() overlays */
-    --hmh-accent-tint:  #E8F2FB;          /* very light wash for card backgrounds */
+#!/usr/bin/env python3
+"""
+update_from_sheets.py — HMH Market Intelligence Auto-Updater
+=============================================================
+Location: Marketupdates_HMH/scripts/update_from_sheets.py
 
-    /* Page structure — dark blue & gray */
-    --hmh-navy:         #0D1B2E;
-    --hmh-navy-mid:     #1A2E4A;
-    --hmh-navy-light:   #24405F;
-    --page-bg:          #C8D4E2;
-    --card-bg:          #F4F7FB;
-    --border-light:     #A8BAD0;
-    --text-primary:     #0D1B2E;
-    --text-secondary:   #1A2E4A;
-    --text-muted:       #5A6880;
+Reads the HMH Google Sheet, filters to the rolling last 7 days,
+and injects styled HTML cards into index.html between the
+<!-- UPDATES:BEGIN --> and <!-- UPDATES:END --> markers.
 
-    /* TOC heat-shading: pink-to-orange scale */
-    /* 0 = gray, 1 = gray, 2 = yellow, 3+ = red (deepening) */
-    --hot-0-bg:   #DDE5F0;  --hot-0-border: #9AAFC8;  --hot-0-color: #4A5868;
-    --hot-1-bg:   #E8ECF2;  --hot-1-border: #A8B8CC;  --hot-1-color: #4A5868;
-    --hot-2-bg:   #FFF8CC;  --hot-2-border: #E8C800;  --hot-2-color: #7A6000;
-    --hot-3-bg:   #FFD0D0;  --hot-3-border: #E03030;  --hot-3-color: #8B0000;
-    --hot-4-bg:   #FFB0B0;  --hot-4-border: #CC1010;  --hot-4-color: #7A0000;
-    --hot-5-bg:   #FF8888;  --hot-5-border: #AA0000;  --hot-5-color: #600000;
-  }
+Usage (run from the repo root OR from scripts/):
+    python scripts/update_from_sheets.py
+    python update_from_sheets.py          # if already in scripts/
 
-  html { scroll-behavior: smooth; }
-  #page-top { scroll-margin-top: 0; }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: 'Source Serif 4', Georgia, serif;
-    font-weight: 300;
-    background: var(--page-bg);
-    color: var(--text-primary);
-    line-height: 1.7;
-    font-size: 15px;
-  }
+Dependencies:
+    pip install gspread oauth2client
 
-  /* ── STATE TOC NAV ────────────────────────────────── */
-  .state-toc {
-    background: #DDE5F0;
-    border-bottom: 1px solid var(--border-light);
-    padding: 12px 48px;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    box-shadow: 0 2px 12px rgba(13,27,46,0.08);
-  }
-  .toc-inner { max-width: 960px; margin: 0 auto; }
-  .toc-label {
-    font-size: 9px;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    font-weight: 700;
-    margin-bottom: 8px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .toc-label::after { content: ''; flex: 1; height: 1px; background: #9AAFC8; }
-  .toc-chips { display: flex; flex-wrap: wrap; gap: 4px; }
-  .toc-chip {
-    display: inline-block;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    padding: 3px 9px;
-    background: var(--hot-0-bg);
-    color: var(--hot-0-color);
-    text-decoration: none;
-    border: 1px solid var(--hot-0-border);
-    transition: all 0.15s;
-    font-family: 'Source Serif 4', serif;
-  }
-  .toc-chip:hover  { background: var(--hmh-navy); color: white; border-color: var(--hmh-navy); }
-  .toc-chip.active { background: var(--hmh-navy); color: white; border-color: var(--hmh-navy); }
-  .toc-chip.hot-0 { background: var(--hot-0-bg); border-color: var(--hot-0-border); color: var(--hot-0-color); }
-  .toc-chip.hot-1 { background: var(--hot-1-bg); border-color: var(--hot-1-border); color: var(--hot-1-color); }
-  .toc-chip.hot-2 { background: var(--hot-2-bg); border-color: var(--hot-2-border); color: var(--hot-2-color); }
-  .toc-chip.hot-3 { background: var(--hot-3-bg); border-color: var(--hot-3-border); color: var(--hot-3-color); }
-  .toc-chip.hot-4 { background: var(--hot-4-bg); border-color: var(--hot-4-border); color: var(--hot-4-color); }
-  .toc-chip.hot-5 { background: var(--hot-5-bg); border-color: var(--hot-5-border); color: var(--hot-5-color); font-weight: 800; }
-  .toc-chip.hot-0:hover,.toc-chip.hot-1:hover,.toc-chip.hot-2:hover,
-  .toc-chip.hot-3:hover,.toc-chip.hot-4:hover,.toc-chip.hot-5:hover {
-    background: var(--hmh-navy); color: white; border-color: var(--hmh-navy);
-  }
+Credentials:
+    scripts/hmh-index-updates-d657b7e7e128.json  (service account key)
 
-  /* ── CONDENSED MASTHEAD ─────────────────────────────── */
-  .memo-header {
-    background: linear-gradient(135deg, #0D1B2E 0%, #1A2E4A 55%, #0D1B2E 100%);
-    color: white;
-    position: relative;
-    overflow: hidden;
-  }
-  .memo-header::before {
-    content: '';
-    position: absolute; inset: 0;
-    background:
-      radial-gradient(ellipse 55% 90% at 90% 50%, rgba(var(--hmh-accent-rgb), .18) 0%, transparent 65%),
-      radial-gradient(ellipse 35% 60% at 5% 85%, rgba(26,46,74,.6) 0%, transparent 60%);
-    pointer-events: none;
-  }
-  .memo-header-inner {
-    position: relative; z-index: 1;
-    max-width: 960px; margin: 0 auto;
-    padding: 36px 48px 28px;
-  }
-  .masthead-eyebrow {
-    display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
-    flex-wrap: wrap;
-  }
-  .logo-pill {
-    background: var(--hmh-accent); color: white;
-    font-family: 'Source Serif 4', serif;
-    font-size: 10px; font-weight: 700;
-    letter-spacing: 0.14em; text-transform: uppercase;
-    padding: 4px 11px;
-  }
-  .date-tag {
-    font-family: 'Source Serif 4', serif;
-    font-size: 11px; font-weight: 400;
-    color: rgba(255,255,255,0.5);
-    letter-spacing: 0.06em;
-  }
-  .confidential-pill {
-    display: inline-block;
-    border: 1px solid rgba(253,230,150,0.4);
-    color: rgba(253,230,150,0.75);
-    font-family: 'Source Serif 4', serif;
-    font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase;
-    padding: 2px 9px; font-weight: 600;
-    margin-left: auto;
-  }
-  .memo-title {
-    font-family: 'Playfair Display', serif;
-    font-size: clamp(26px, 4vw, 38px);
-    font-weight: 700; line-height: 1.12;
-    letter-spacing: -0.015em;
-    color: white; margin-bottom: 8px;
-  }
-  .memo-title span { color: var(--hmh-accent); }
-  .memo-subtitle {
-    font-size: 12.5px; color: rgba(255,255,255,0.55);
-    font-weight: 300; letter-spacing: 0.06em;
-  }
-  .masthead-rule {
-    height: 3px;
-    background: linear-gradient(90deg, var(--hmh-accent) 0%, var(--hmh-navy-light) 60%, transparent 100%);
-  }
+The script is IDEMPOTENT — safe to run multiple times. Each run fully
+replaces the content between the UPDATES markers with fresh data.
+"""
 
-  /* ── FILTER TOGGLE BUTTON ───────────────────────────── */
-  .filter-toggle-btn {
-    display: inline-flex; align-items: center; gap: 5px;
-    background: rgba(13,27,46,0.05);
-    border: 1px solid var(--border-light);
-    color: var(--text-muted);
-    font-family: 'Source Serif 4', serif;
-    font-size: 9px; font-weight: 700;
-    letter-spacing: 0.15em; text-transform: uppercase;
-    padding: 3px 9px 3px 7px; cursor: pointer; border-radius: 3px;
-    transition: all 0.15s; white-space: nowrap; flex-shrink: 0;
-    margin-left: auto; line-height: 1.4;
-  }
-  .filter-toggle-btn:hover { background: var(--hmh-navy); color: white; border-color: var(--hmh-navy); }
-  .filter-toggle-btn.has-filter {
-    border-color: var(--hmh-accent); color: var(--hmh-accent);
-    background: rgba(var(--hmh-accent-rgb), 0.08);
-  }
-  .filter-toggle-btn.has-filter:hover { background: var(--hmh-accent); color: white; border-color: var(--hmh-accent); }
-  .toggle-chevron {
-    font-style: normal; font-size: 10px; display: inline-block;
-    transition: transform 0.25s ease;
-  }
-  .filter-toggle-btn.is-collapsed .toggle-chevron { transform: rotate(-90deg); }
-  .nav-clear-btn {
-    display: none;
-    align-items: center; gap: 4px;
-    background: rgba(214,56,32,0.1);
-    border: 1px solid rgba(214,56,32,0.35);
-    color: #d63820;
-    font-family: 'Source Serif 4', serif;
-    font-size: 9px; font-weight: 700;
-    letter-spacing: 0.12em; text-transform: uppercase;
-    padding: 3px 9px; cursor: pointer; border-radius: 3px;
-    transition: all 0.15s; white-space: nowrap; flex-shrink: 0; line-height: 1.4;
-  }
-  .nav-clear-btn.visible { display: inline-flex; }
-  .nav-clear-btn:hover { background: #d63820; color: white; border-color: #d63820; }
-  .filter-dot {
-    width: 5px; height: 5px; border-radius: 50%;
-    background: var(--hmh-accent); display: none; flex-shrink: 0;
-  }
-  .filter-toggle-btn.has-filter .filter-dot { display: inline-block; }
+import datetime
+import os
+import re
+import sys
+from html import escape
+from pathlib import Path
 
-  /* ── ISSUE FILTER BAR ──────────────────────────────── */
-  .issue-filter-bar {
-    background: var(--hmh-navy);
-    border-bottom: 1px solid rgba(255,255,255,0.08);
-    position: sticky; z-index: 99;
-    box-shadow: 0 2px 8px rgba(13,27,46,0.18);
-    overflow: hidden;
-    transition: max-height .3s ease, padding .3s ease,
-                box-shadow .3s ease, border-bottom-color .3s ease;
-    padding: 8px 48px;
-  }
-  .issue-filter-bar.collapsed {
-    max-height: 0 !important; padding-top: 0; padding-bottom: 0;
-    border-bottom-color: transparent; box-shadow: none;
-  }
-  .issue-filter-inner {
-    max-width: 960px; margin: 0 auto;
-    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
-  }
-  .issue-filter-label {
-    font-family: 'Source Serif 4', serif;
-    font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
-    color: rgba(255,255,255,0.5); font-weight: 700;
-    white-space: nowrap; margin-right: 4px; flex-shrink: 0;
-  }
-  .issue-chip {
-    display: inline-block;
-    font-family: 'Source Serif 4', serif;
-    font-size: 10px; font-weight: 700;
-    letter-spacing: 0.07em; text-transform: uppercase;
-    padding: 3px 10px; border-radius: 12px;
-    background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.65);
-    border: 1px solid rgba(255,255,255,0.14);
-    cursor: pointer; transition: all 0.15s; user-select: none;
-  }
-  .issue-chip:hover { background: rgba(255,255,255,0.16); color: white; border-color: rgba(255,255,255,0.3); }
-  .issue-chip.active { background: var(--hmh-accent); color: white; border-color: var(--hmh-accent); }
-  .issue-chip.all-chip.active { background: rgba(255,255,255,0.22); color: white; border-color: rgba(255,255,255,0.4); }
-  .issue-chip.issue-dimmed { opacity: 0.3; cursor: default; pointer-events: none; }
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 
-  /* ── FILTER STATUS BAR ─────────────────────────────── */
-  .filter-status-bar {
-    background: rgba(var(--hmh-accent-rgb), 0.08);
-    border-bottom: 1px solid rgba(var(--hmh-accent-rgb), 0.22);
-    padding: 6px 48px;
-  }
-  .filter-status-inner {
-    max-width: 960px; margin: 0 auto;
-    display: flex; align-items: center; gap: 10px;
-    font-family: 'Source Serif 4', serif;
-    font-size: 11px; font-weight: 600;
-    letter-spacing: 0.06em; color: var(--hmh-accent-dark);
-    text-transform: uppercase; flex-wrap: wrap;
-  }
-  .status-label { color: var(--text-muted); font-weight: 400; text-transform: none; letter-spacing: 0; font-size: 12px; }
-  .status-tag { background: var(--hmh-accent); color: white; padding: 2px 8px; border-radius: 10px; font-size: 10px; }
-  .status-tag.state-tag { background: var(--hmh-navy); }
-  .filter-clear-all {
-    margin-left: auto; cursor: pointer;
-    font-family: 'Source Serif 4', serif;
-    font-size: 10px; letter-spacing: 0.1em;
-    text-transform: uppercase; font-weight: 700;
-    color: var(--hmh-accent-dark); background: none;
-    border: 1px solid rgba(var(--hmh-accent-rgb), 0.3); padding: 2px 10px;
-    border-radius: 10px; transition: all 0.15s;
-  }
-  .filter-clear-all:hover { background: var(--hmh-accent); color: white; border-color: var(--hmh-accent); }
+# ── PATH RESOLUTION ────────────────────────────────────────────────────────────
+# Works whether the script is run from the repo root or from scripts/
+SCRIPT_DIR   = Path(__file__).resolve().parent          # …/scripts/
+REPO_ROOT    = SCRIPT_DIR.parent                        # …/Marketupdates_HMH/
+CREDS_FILE   = SCRIPT_DIR / "hmh-index-updates-d657b7e7e128.json"
+INDEX_HTML   = REPO_ROOT / "index.html"
 
-  /* ── TOC LABEL ROW (UPDATED FOR FILTER TOGGLE) ────── */
-  .toc-label-row {
-    display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
-  }
-  .toc-label-row .toc-label { flex: 1; margin-bottom: 0; }
-  .toc-heat-legend {
-    font-weight: 400; letter-spacing: 0; text-transform: none;
-    font-size: 10px; color: var(--text-muted);
-    display: flex; align-items: center; gap: 4px;
-  }
-  .toc-chip.state-active {
-    background: var(--hmh-navy) !important; color: white !important;
-    border-color: var(--hmh-accent) !important;
-    box-shadow: 0 0 0 2px var(--hmh-accent);
-  }
-  .toc-chip.state-dimmed { opacity: 0.2; cursor: default; pointer-events: none; }
+# ── GOOGLE SHEETS CONFIG ───────────────────────────────────────────────────────
+SHEET_URL    = "https://docs.google.com/spreadsheets/d/1CHepyOinqrY5nSQqx66C_HAQ0NkKVXBWj5QW13OHfw8"
+SCOPE        = [
+    "https://spreadsheets.google.com/feeds",
+    "https://www.googleapis.com/auth/drive",
+]
 
-  /* ── FILTER BEHAVIOR CLASSES ───────────────────────── */
-  .entry-card.issue-hidden { display: none; }
-  .state-section.issue-empty { display: none; }
+# ── FILTER CONFIG ──────────────────────────────────────────────────────────────
+DAYS_WINDOW       = 10          # rolling lookback window
+DATE_COL          = "Date"     # column header in spreadsheet (title-case)
+SCORE_COL         = "Bad-Good"
+SCORE_THRESHOLD   = 3
+ACTION_COL        = "Cold-Hot"
+ISSUE_COL         = "Issue"
+SECTOR_COL        = "Sector"
+DISTRICT_COL      = "District Validatation"
+CONTENT_COL       = "Content Text"
+LINK_COL          = "Link"
+WHY_COL           = "WHY THIS MATTERS1"
+SOUNDBYTE_COL     = "SoundByte"
+STATE_COL         = "State"
+SHOW_BAD_GOOD_FOR = {"Budget", "Finance"}
+HOT_THRESHOLD     = 3
 
-  /* ── Video Overview WIDGET (PiP) ─────────────── */
-  .video-pip {
-    position: fixed; bottom: 28px; right: 80px;
-    width: 320px; height: auto;
-    background: var(--hmh-navy);
-    border: 1px solid rgba(var(--hmh-accent-rgb), 0.4);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.32);
-    z-index: 98;
-    display: flex; flex-direction: column;
-    transition: transform 0.25s ease, opacity 0.25s ease;
-  }
-  .video-pip.collapsed {
-    width: auto; height: auto;
-  }
-  .video-pip.collapsed .video-pip-body { display: none; }
-  .video-pip.hidden {
-    transform: translateY(120%); opacity: 0; pointer-events: none;
-  }
-  .video-pip-header {
-    display: flex; align-items: center; gap: 8px;
-    padding: 8px 10px;
-    background: linear-gradient(90deg, var(--hmh-accent-dark) 0%, var(--hmh-accent) 100%);
-    color: white;
-    cursor: move;
-    user-select: none;
-  }
-  .video-pip-icon {
-    font-size: 14px; flex-shrink: 0;
-  }
-  .video-pip-title {
-    flex: 1;
-    font-family: 'Source Serif 4', serif;
-    font-size: 10px; font-weight: 700;
-    letter-spacing: 0.14em; text-transform: uppercase;
-    color: white;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
-  .video-pip-btn {
-    background: rgba(255,255,255,0.15);
-    border: 1px solid rgba(255,255,255,0.25);
-    color: white;
-    font-size: 11px; line-height: 1;
-    width: 22px; height: 22px;
-    display: inline-flex; align-items: center; justify-content: center;
-    cursor: pointer; padding: 0;
-    transition: background 0.15s, border-color 0.15s;
-    font-family: inherit;
-  }
-  .video-pip-btn:hover {
-    background: rgba(255,255,255,0.3);
-    border-color: rgba(255,255,255,0.5);
-  }
-  .video-pip-btn:focus-visible {
-    outline: 2px solid white; outline-offset: 1px;
-  }
-  .video-pip-body {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 16 / 9;
-    background: black;
-  }
-  .video-pip-body iframe {
-    position: absolute; inset: 0;
-    width: 100%; height: 100%;
-    border: 0;
-  }
-  .video-pip-launcher {
-    position: fixed; bottom: 28px; right: 80px;
-    width: 52px; height: 52px; border-radius: 50%;
-    background: linear-gradient(135deg, var(--hmh-accent-dark) 0%, var(--hmh-accent) 100%);
-    color: white;
-    border: 2px solid rgba(255,255,255,0.15);
-    box-shadow: 0 4px 14px rgba(0,0,0,0.3);
-    cursor: pointer;
-    display: none;
-    align-items: center; justify-content: center;
-    font-size: 22px;
-    z-index: 98;
-    transition: transform 0.18s ease, box-shadow 0.18s ease;
-  }
-  .video-pip-launcher:hover {
-    transform: scale(1.06);
-    box-shadow: 0 6px 18px rgba(0,0,0,0.4);
-  }
-  .video-pip-launcher.visible { display: flex; }
-  .video-pip-launcher::after {
-    content: ''; position: absolute; inset: -3px;
-    border-radius: 50%;
-    border: 2px solid var(--hmh-accent);
-    opacity: 0.6;
-    animation: pip-pulse 2.4s ease-out infinite;
-  }
-  @keyframes pip-pulse {
-    0%   { transform: scale(1);    opacity: 0.6; }
-    70%  { transform: scale(1.4);  opacity: 0; }
-    100% { transform: scale(1.4);  opacity: 0; }
-  }
+# ── HTML INJECTION MARKERS ─────────────────────────────────────────────────────
+# These must exist in index.html. Content between them is fully replaced each run.
+MARKER_BEGIN = "<!-- UPDATES:BEGIN -->"
+MARKER_END   = "<!-- UPDATES:END -->"
 
-  /* ════════════════════════════════════════════════════════════════════════
-     ── ASK DAVID — floating contact button + modal ─────────────────────────
-     Bottom-left FAB opens a composer that ships a mailto: to
-     david@whiteboardadvisors.com. Inline [data-open-contact] triggers also
-     open the same modal. Adapts to whichever accent the page randomized.
-     ════════════════════════════════════════════════════════════════════════ */
-  .contact-fab {
-    position: fixed; bottom: 28px; left: 28px;
-    display: inline-flex; align-items: center; gap: 9px;
-    padding: 9px 16px 9px 11px;
-    background: var(--hmh-navy);
-    color: white;
-    border: 1px solid rgba(255,255,255,0.1);
-    border-left: 3px solid var(--hmh-accent);
-    box-shadow: 0 4px 14px rgba(0,0,0,0.28);
-    cursor: pointer;
-    font-family: 'Source Serif 4', serif;
-    font-size: 11px; font-weight: 700;
-    letter-spacing: 0.16em; text-transform: uppercase;
-    z-index: 96;
-    transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s;
-  }
-  .contact-fab:hover {
-    background: var(--hmh-accent);
-    border-left-color: white;
-    transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(var(--hmh-accent-rgb), 0.35);
-  }
-  .contact-fab:focus-visible { outline: 2px solid var(--hmh-accent); outline-offset: 2px; }
-  .contact-fab .fab-icon {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 22px; height: 22px; border-radius: 50%;
-    background: var(--hmh-accent);
-    color: white; font-size: 12px;
-    flex-shrink: 0;
-    transition: background 0.15s;
-  }
-  .contact-fab:hover .fab-icon { background: white; color: var(--hmh-accent); }
+# Automation panel markers (optional — skipped if not found)
+PANEL_MARKERS = {
+    "LAST_GENERATED":    lambda v: f"📅 <strong>Latest Update:</strong> {v}",
+    "DATA_SOURCE":       lambda v: f"📂 <strong>Source:</strong> {v}",
+    "DATE_WINDOW":       lambda v: f"📆 <strong>Window:</strong> {v}",
+    "ROW_COUNT":         lambda v: f"📊 <strong>Rows Processed:</strong> {v}",
+    "GENERATION_METHOD": lambda v: (
+        '<span class="auto-status active">'
+        '<span class="auto-dot"></span> Auto — Python</span>'
+    ),
+}
 
-  /* Inline triggers (intro / footer): styled like a subtle text link */
-  .contact-inline {
-    display: inline-flex; align-items: center; gap: 5px;
-    color: var(--hmh-accent-dark);
-    text-decoration: none;
-    font-weight: 600;
-    border-bottom: 1px solid rgba(var(--hmh-accent-rgb), 0.35);
-    padding-bottom: 1px;
-    transition: color 0.15s, border-color 0.15s;
-    cursor: pointer;
-    background: none; border-left: 0; border-right: 0; border-top: 0;
-    font-family: inherit; font-size: inherit;
-  }
-  .contact-inline:hover { color: var(--hmh-accent); border-bottom-color: var(--hmh-accent); }
-  .contact-inline::before { content: '✉'; font-size: 13px; line-height: 1; }
 
-  /* Modal overlay */
-  .contact-modal {
-    position: fixed; inset: 0;
-    z-index: 200;
-    display: flex; align-items: center; justify-content: center;
-    padding: 24px;
-  }
-  .contact-modal[hidden] { display: none; }
-  .contact-modal-backdrop {
-    position: absolute; inset: 0;
-    background: rgba(13,27,46,0.62);
-    backdrop-filter: blur(2px);
-    opacity: 0;
-    transition: opacity 0.2s ease;
-  }
-  .contact-modal.open .contact-modal-backdrop { opacity: 1; }
-  .contact-modal-card {
-    position: relative;
-    width: 100%; max-width: 520px;
-    max-height: calc(100vh - 48px);
-    overflow-y: auto;
-    background: var(--card-bg);
-    border-top: 3px solid var(--hmh-accent);
-    box-shadow: 0 24px 60px rgba(0,0,0,0.4);
-    transform: translateY(12px) scale(0.98);
-    opacity: 0;
-    transition: transform 0.22s ease, opacity 0.22s ease;
-    font-family: 'Source Serif 4', serif;
-  }
-  .contact-modal.open .contact-modal-card { transform: translateY(0) scale(1); opacity: 1; }
-  .contact-modal-header {
-    display: flex; align-items: flex-start; gap: 12px;
-    padding: 22px 24px 16px;
-    border-bottom: 1px solid var(--border-light);
-  }
-  .contact-modal-header > div:first-child { flex: 1; min-width: 0; }
-  .contact-modal-header h2 {
-    font-family: 'Playfair Display', serif;
-    font-size: 22px; font-weight: 700; color: var(--text-primary);
-    line-height: 1.2; margin: 0 0 4px 0;
-    letter-spacing: -0.01em;
-  }
-  .contact-modal-header p {
-    font-family: 'Source Serif 4', serif;
-    font-size: 12px; color: var(--text-muted);
-    letter-spacing: 0.04em; margin: 0;
-  }
-  .contact-close {
-    background: transparent; border: 1px solid var(--border-light);
-    width: 30px; height: 30px;
-    color: var(--text-muted);
-    font-size: 14px; line-height: 1;
-    cursor: pointer; flex-shrink: 0;
-    display: inline-flex; align-items: center; justify-content: center;
-    transition: all 0.15s;
-  }
-  .contact-close:hover { background: var(--hmh-accent); color: white; border-color: var(--hmh-accent); }
-  .contact-form {
-    display: flex; flex-direction: column; gap: 14px;
-    padding: 18px 24px 22px;
-  }
-  .contact-field { display: flex; flex-direction: column; gap: 5px; }
-  .contact-label {
-    font-family: 'Source Serif 4', serif;
-    font-size: 10px; font-weight: 700;
-    letter-spacing: 0.18em; text-transform: uppercase;
-    color: var(--text-muted);
-  }
-  .contact-form input[type="text"],
-  .contact-form textarea {
-    width: 100%;
-    padding: 9px 12px;
-    background: white;
-    border: 1px solid var(--border-light);
-    color: var(--text-primary);
-    font-family: 'Source Serif 4', serif;
-    font-size: 14px; line-height: 1.55;
-    transition: border-color 0.15s, box-shadow 0.15s;
-    resize: vertical;
-  }
-  .contact-form input[type="text"]:focus,
-  .contact-form textarea:focus {
-    outline: none;
-    border-color: var(--hmh-accent);
-    box-shadow: 0 0 0 3px rgba(var(--hmh-accent-rgb), 0.18);
-  }
-  .contact-form textarea { min-height: 110px; }
-  .contact-checkbox {
-    display: flex; align-items: flex-start; gap: 8px;
-    font-size: 12.5px; color: var(--text-secondary);
-    line-height: 1.4; cursor: pointer; user-select: none;
-  }
-  .contact-checkbox input { margin-top: 2px; cursor: pointer; flex-shrink: 0; accent-color: var(--hmh-accent); }
-  .contact-actions {
-    display: flex; flex-wrap: wrap; gap: 10px;
-    margin-top: 4px;
-  }
-  .contact-btn-primary,
-  .contact-btn-secondary {
-    flex: 1 1 180px;
-    padding: 10px 16px;
-    font-family: 'Source Serif 4', serif;
-    font-size: 11px; font-weight: 700;
-    letter-spacing: 0.14em; text-transform: uppercase;
-    cursor: pointer;
-    transition: all 0.15s;
-    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  }
-  .contact-btn-primary {
-    background: var(--hmh-accent); color: white; border: 1px solid var(--hmh-accent);
-  }
-  .contact-btn-primary:hover { background: var(--hmh-accent-dark); border-color: var(--hmh-accent-dark); }
-  .contact-btn-secondary {
-    background: white; color: var(--text-primary); border: 1px solid var(--border-light);
-  }
-  .contact-btn-secondary:hover { background: var(--page-bg); border-color: var(--text-muted); }
-  .contact-status {
-    font-family: 'Source Serif 4', serif;
-    font-size: 11px; letter-spacing: 0.04em;
-    color: var(--text-muted);
-    min-height: 16px;
-    margin-top: -2px;
-  }
-  .contact-status.success { color: #1a5c1a; }
-  .contact-status.error   { color: #8b1a1a; }
+# ── STEP 1: AUTHENTICATE & FETCH ──────────────────────────────────────────────
+def fetch_records():
+    if not CREDS_FILE.exists():
+        print(f"ERROR: Credentials file not found: {CREDS_FILE}")
+        sys.exit(1)
 
-  /* ── BODY ────────────────────────────────────────── */
-  .memo-body { max-width: 960px; margin: 0 auto; padding: 52px 48px 80px; }
-  /* ── OVERVIEW BLOCK (merges intro + stats; data leads, prose follows) ── */
-  .overview-block {
-    background: linear-gradient(135deg, #F4F7FB 0%, #EAF1F8 100%);
-    border-left: 3px solid var(--hmh-accent);
-    margin-bottom: 32px;
-    box-shadow: 0 1px 6px rgba(13,27,46,0.06);
-    overflow: hidden;
-  }
-  .overview-eyebrow {
-    display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 14px;
-    padding: 9px 22px;
-    background: rgba(var(--hmh-accent-rgb), 0.08);
-    border-bottom: 1px solid rgba(var(--hmh-accent-rgb), 0.18);
-  }
-  .overview-period {
-    font-family: 'Playfair Display', serif;
-    font-size: 14px; font-weight: 700;
-    color: var(--hmh-accent-dark);
-    letter-spacing: -0.005em;
-  }
-  .overview-window {
-    font-size: 9.5px; letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--text-muted); font-weight: 600;
-  }
+    try:
+        creds  = ServiceAccountCredentials.from_json_keyfile_name(str(CREDS_FILE), SCOPE)
+        client = gspread.authorize(creds)
+        print("✓ Authenticated with Google API")
+    except Exception as e:
+        print(f"ERROR authenticating with Google API: {e}")
+        sys.exit(1)
 
-  /* Stats grid — visual centerpiece, compact */
-  .overview-stats {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.6fr);
-    gap: 0;
-    padding: 14px 22px 14px;
-    background: white;
-    border-bottom: 1px solid #E0E7F0;
-  }
-  .big-stat {
-    padding: 2px 18px;
-    border-right: 1px solid #E8EEF6;
-    display: flex; flex-direction: column; justify-content: center;
-  }
-  .big-stat:first-child { padding-left: 0; }
-  .big-stat:last-child  { border-right: 0; padding-right: 0; }
-  .big-stat .stat-number {
-    font-family: 'Playfair Display', serif;
-    font-size: 36px; font-weight: 700;
-    line-height: 1;
-    margin-bottom: 4px;
-    letter-spacing: -0.02em;
-  }
-  .big-stat .stat-number.total  { color: var(--hmh-accent-dark); }
-  .big-stat .stat-number.states { color: var(--hmh-navy); }
-  .big-stat .stat-number        { color: var(--hmh-navy-mid); }
-  .big-stat .stat-label {
-    font-size: 9px; letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--text-muted); font-weight: 700;
-  }
-  .big-stat.top-issues .stat-label { margin-bottom: 5px; }
-  .big-stat.top-issues .top-issues-list {
-    display: flex; flex-wrap: wrap;
-    gap: 4px 10px;
-  }
-  .big-stat.top-issues .top-issue {
-    display: inline-flex; align-items: baseline; gap: 5px;
-    font-size: 11.5px; line-height: 1.35;
-    white-space: nowrap;
-  }
-  .big-stat.top-issues .top-issue-rank {
-    font-family: 'Playfair Display', serif;
-    font-weight: 700; font-size: 11px;
-    color: var(--hmh-accent);
-    flex-shrink: 0;
-  }
-  .big-stat.top-issues .top-issue-name {
-    font-weight: 600; color: var(--text-primary);
-  }
-  .big-stat.top-issues .top-issue-count {
-    font-family: 'Playfair Display', serif;
-    font-weight: 700; font-size: 12px;
-    color: var(--hmh-navy);
-    flex-shrink: 0;
-  }
+    try:
+        spreadsheet = client.open_by_url(SHEET_URL)
+        # Use the correct tab name — falls back to sheet1 if not found
+        try:
+            sheet = spreadsheet.worksheet("K12 Track 2026")
+            print("✓ Opened tab: K12 Track 2026")
+        except gspread.exceptions.WorksheetNotFound:
+            print("⚠ Tab 'K12 Track 2026' not found — falling back to first sheet")
+            sheet = spreadsheet.sheet1
+        # Use get_all_values() to bypass blank/duplicate header issue in gspread
+        all_values = sheet.get_all_values()
+        if not all_values:
+            print("⚠ Sheet appears empty")
+            return []
+        headers = all_values[0]
+        records = []
+        for row in all_values[1:]:
+            # Pad short rows to header length
+            row = list(row) + [""] * (len(headers) - len(row))
+            # Build dict skipping blank header columns
+            record = {
+                headers[i]: row[i]
+                for i in range(len(headers))
+                if headers[i].strip()
+            }
+            records.append(record)
+        print(f"✓ Retrieved {len(records)} records from Google Sheet")
+        return records
+    except gspread.exceptions.SpreadsheetNotFound:
+        print("ERROR: Spreadsheet not found. Check the URL and sharing permissions.")
+        sys.exit(1)
+    except gspread.exceptions.APIError as e:
+        print(f"ERROR: Google Sheets API error: {e}")
+        sys.exit(1)
+    except Exception as e:
+        print(f"ERROR accessing Google Sheet: {e}")
+        sys.exit(1)
 
-  /* Compact prose footer */
-  .overview-prose {
-    padding: 9px 22px 11px;
-    display: flex; flex-wrap: wrap; align-items: center;
-    gap: 6px 14px;
-    font-size: 11.5px; color: var(--text-secondary);
-    line-height: 1.5;
-  }
-  .overview-prose .prose-note {
-    flex: 1 1 280px;
-    min-width: 0;
-  }
-  .overview-prose .prose-links {
-    display: flex; flex-wrap: wrap; gap: 12px;
-    align-items: center;
-    margin-left: auto;
-  }
-  .overview-prose .prose-links a {
-    font-size: 11.5px;
-    border-bottom-width: 1px;
-  }
-  .overview-prose .prose-links a::before { font-size: 13px; }
-  .badge-inline {
-    display: inline-block;
-    padding: 0 5px; border-radius: 7px;
-    font-size: 9.5px; font-weight: 700;
-    letter-spacing: 0.02em;
-    vertical-align: 1px;
-  }
-  .badge-inline.declining { background: #FDECEA; border: 1px solid #F5A0A0; color: #8B1A1A; }
-  .badge-inline.flat      { background: #FFF8E1; border: 1px solid #F5D870; color: #7A5800; }
-  .badge-inline.improving { background: #E8F5E8; border: 1px solid #80C880; color: #1A5C1A; }
 
-  @media (max-width: 760px) {
-    .overview-stats {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      padding: 12px 18px;
+# ── STEP 2: FILTER ─────────────────────────────────────────────────────────────
+def filter_records(records):
+    cutoff = datetime.datetime.utcnow() - datetime.timedelta(days=DAYS_WINDOW)
+    updates = []
+
+    for record in records:
+        date_str = str(record.get(DATE_COL, "") or record.get("date", "")).strip()
+        if not date_str:
+            continue
+
+        # Try multiple date formats
+        date_obj = None
+        for fmt in ("%m/%d/%Y", "%Y-%m-%d", "%m-%d-%Y", "%Y/%m/%d"):
+            try:
+                date_obj = datetime.datetime.strptime(date_str, fmt)
+                break
+            except ValueError:
+                continue
+
+        if date_obj is None:
+            print(f"  ⚠ Skipping unrecognised date format: {date_str!r}")
+            continue
+
+        try:
+            bad_good = int(record.get(SCORE_COL, 0) or 0)
+        except (ValueError, TypeError):
+            bad_good = 0
+
+        if date_obj >= cutoff and bad_good == SCORE_THRESHOLD:
+            updates.append({**record, "_date_obj": date_obj, "_date_str": date_str})
+
+    # Sort by State → Issue
+    updates.sort(key=lambda r: (str(r.get(STATE_COL, "")), str(r.get(ISSUE_COL, ""))))
+    print(f"✓ {len(updates)} qualifying records (last {DAYS_WINDOW} days, {SCORE_COL}={SCORE_THRESHOLD})")
+    return updates
+
+
+# ── STEP 3: BUILD HTML ─────────────────────────────────────────────────────────
+def safe(val):
+    """Return empty string for None/NaN, else stripped string."""
+    if val is None:
+        return ""
+    s = str(val).strip()
+    return "" if s.lower() in ("nan", "none") else s
+
+
+def score_class(cold_hot):
+    try:
+        return {1: "cool", 2: "warm", 3: "hot"}.get(int(cold_hot), "warm")
+    except (TypeError, ValueError):
+        return "warm"
+
+
+def score_dot_class(cold_hot):
+    try:
+        return f"score-{min(max(int(cold_hot), 1), 3)}"
+    except (TypeError, ValueError):
+        return "score-2"
+
+
+def client_analysis(record):
+    """~20-word HMH-specific insight for Cold-Hot == 3 entries."""
+    issue  = safe(record.get(ISSUE_COL, "")).lower()
+    state  = safe(record.get(STATE_COL, ""))
+    sector = safe(record.get(SECTOR_COL, "")).lower()
+    snippets = {
+        "reading":    f"{state}'s reading investment signals active curriculum procurement — HMH's science-of-reading aligned programs are directly positioned for this market.",
+        "math":       f"{state}'s math initiative drives demand for aligned curriculum — HMH should engage district procurement contacts now before the adoption cycle closes.",
+        "teachers":   f"{state}'s teacher pipeline gap creates interim professional development need — a direct HMH engagement opportunity at the {sector} level.",
+        "budget":     f"Approved budget in {state} confirms available funding cycles — timely for HMH to initiate or advance {sector}-level procurement conversations.",
+        "stem":       f"{state}'s STEM expansion funds teacher training and materials across agencies — a strong HMH curriculum and professional development opportunity.",
+        "curriculum": f"{state}'s curriculum investment signals active materials review — HMH should position aligned solutions with district instructional leaders now.",
+        "sped":       f"{state}'s special education build creates demand for adaptive instructional resources aligned with HMH's specialized learning portfolio.",
+        "ece":        f"{state}'s early childhood investment expands pre-K program capacity — creating direct demand for HMH early learning curriculum and materials.",
+        "childcare":  f"{state}'s childcare expansion signals growing early learning infrastructure — an HMH early curriculum engagement opportunity.",
+        "assessment": f"{state} assessment momentum signals instructional investment — HMH should highlight aligned assessment and curriculum solutions to {sector} leaders.",
+        "graduation": f"{state}'s record outcomes signal a stable, high-performing market — favorable conditions for deepening HMH's existing district relationships.",
+        "literacy":   f"{state}'s literacy initiative creates demand for evidence-based reading programs — a direct HMH procurement opportunity at scale.",
     }
-    .big-stat { padding: 2px 12px; }
-    .big-stat .stat-number { font-size: 30px; }
-    .big-stat.top-issues {
-      grid-column: 1 / -1;
-      border-right: 0; border-top: 1px solid #E8EEF6;
-      padding: 10px 0 0; margin-top: 6px;
-    }
-    .overview-eyebrow,
-    .overview-prose { padding-left: 18px; padding-right: 18px; }
-    .overview-prose .prose-links { margin-left: 0; }
-  }
-  .dashboard-link { display: inline-flex; align-items: center; gap: 8px; color: var(--hmh-accent-dark); text-decoration: none; font-weight: 600; font-size: 14px; border-bottom: 1px solid rgba(var(--hmh-accent-rgb), 0.35); padding-bottom: 1px; transition: all 0.2s; }
-  .dashboard-link:hover { color: var(--hmh-accent); border-color: var(--hmh-accent); }
-  .dashboard-link::before { content: '→'; font-size: 16px; }
+    for key, text in snippets.items():
+        if key in issue:
+            return text
+    return (
+        f"This {state} {safe(record.get(ISSUE_COL,''))} development signals active policy momentum — "
+        f"HMH should evaluate engagement with {sector}-level leaders."
+    )
 
-  /* ── STATE SECTIONS ──────────────────────────────── */
-  .state-section { margin-bottom: 52px; scroll-margin-top: 80px; }
-  .state-header { display: flex; align-items: baseline; gap: 16px; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid var(--hmh-navy); }
-  .state-name { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 700; color: var(--hmh-navy); letter-spacing: -0.01em; }
-  .state-abbrev { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-muted); font-weight: 600; padding: 2px 8px; border: 1px solid var(--border-light); }
-  .state-count { margin-left: auto; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
 
-  /* ── ENTRY CARDS ─────────────────────────────────── */
-  .entry-card { background: var(--card-bg); border: 1px solid var(--border-light); margin-bottom: 16px; padding: 22px 26px; position: relative; transition: box-shadow 0.2s; }
-  .entry-card:hover { box-shadow: 0 4px 16px rgba(13,27,46,0.10); }
-  .entry-card.score3 { border-left: 4px solid var(--hmh-accent); background: var(--hmh-accent-tint); }
-  .entry-card.score2 { border-left: 4px solid var(--hmh-navy); }
-  .entry-card.score1 { border-left: 4px solid #8AAABF; }
-  .entry-card.has-soundbyte { border-top: 3px solid var(--hmh-accent); }
+def build_entry_card(record):
+    state     = safe(record.get(STATE_COL))
+    sector    = safe(record.get(SECTOR_COL))
+    issue     = safe(record.get(ISSUE_COL))
+    district  = safe(record.get(DISTRICT_COL))
+    content   = safe(record.get(CONTENT_COL))
+    link      = safe(record.get(LINK_COL))
+    why       = safe(record.get(WHY_COL))
+    soundbyte = safe(record.get(SOUNDBYTE_COL))
+    bad_good  = safe(record.get(SCORE_COL))
+    date_str  = record.get("_date_str", "")
 
-  /* ── W/A VIDEO CALLOUT ───────────────────────────── */
-  .wa-video-callout {
-    display: flex; align-items: center; gap: 10px;
-    background: rgba(var(--hmh-accent-rgb), 0.06);
-    border: 1px solid rgba(var(--hmh-accent-rgb), 0.22);
-    border-left: 3px solid var(--hmh-accent);
-    padding: 8px 14px; margin-bottom: 14px;
-  }
-  .wa-video-callout-icon { font-size: 16px; flex-shrink: 0; }
-  .wa-video-callout-text { display: flex; flex-direction: column; gap: 3px; }
-  .wa-video-callout-label { font-size: 9px; letter-spacing: 0.2em; color: var(--hmh-accent); font-weight: 700; text-transform: uppercase; }
-  .wa-video-link { display: inline-flex; align-items: center; gap: 5px; color: var(--hmh-accent); text-decoration: none; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; border-bottom: 1px solid rgba(var(--hmh-accent-rgb), 0.3); }
-  .wa-video-link:hover { border-color: var(--hmh-accent); }
+    try:
+        cold_hot = int(record.get(ACTION_COL, 0) or 0)
+    except (TypeError, ValueError):
+        cold_hot = 0
 
-  /* ── META ROW ────────────────────────────────────── */
-  .entry-meta { display: flex; flex-wrap: wrap; gap: 6px 10px; margin-bottom: 10px; align-items: center; }
-  .meta-chip { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 600; padding: 2px 8px; background: #DDE5F0; color: var(--text-secondary); font-family: 'Source Serif 4', serif; }
-  .meta-chip.issue { background: var(--hmh-navy); color: white; }
-  .meta-chip.level { background: var(--hmh-navy-mid); color: white; }
-  .meta-chip.date  { background: transparent; color: var(--text-muted); border: 1px solid var(--border-light); }
+    # Format date for display
+    try:
+        d = record["_date_obj"]
+        display_date = d.strftime("%B %-d, %Y")
+    except Exception:
+        display_date = date_str
 
-  /* Score pill tags */
-  .actionable-score { margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 11px; }
-  .score3-tag { color: var(--hmh-accent-dark); background: var(--hmh-accent-tint); padding: 2px 9px; border-radius: 10px; border: 1px solid var(--hmh-accent); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; }
-  .score2-tag { color: #0D1B2E; background: #C8D6E8; padding: 2px 9px; border-radius: 10px; border: 1px solid #8AAABF; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; }
-  .score1-tag { color: #4A5868; background: #DDE5F0; padding: 2px 9px; border-radius: 10px; border: 1px solid #B8C4D4; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; }
+    card_cls = score_class(cold_hot)
+    dot_cls  = score_dot_class(cold_hot)
+    level_n  = min(max(cold_hot, 1), 3)
 
-  /* Budget direction tags */
-  .badgood-tag { padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; }
-  .badgood-1 { color: #8B1A1A; background: #FDECEA; border: 1px solid #F5A0A0; }
-  .badgood-2 { color: #7A5800; background: #FFF8E1; border: 1px solid #F5D870; }
-  .badgood-3 { color: #1A5C1A; background: #E8F5E8; border: 1px solid #80C880; }
+    # Bad-Good chip (only for Budget / Finance)
+    bg_chip = ""
+    if issue in SHOW_BAD_GOOD_FOR and bad_good:
+        bg_chip = f'<span class="meta-chip date">Bad-Good: {escape(bad_good)}</span>'
 
-  /* Compact indicators */
-  .meta-indicator { display: inline-flex; align-items: center; justify-content: center; font-size: 11px; padding: 1px 5px; border-radius: 3px; font-style: normal; cursor: default; vertical-align: middle; }
-  .why-indicator { color: var(--hmh-accent-dark); background: rgba(253,185,19,0.1); border: 1px solid rgba(253,185,19,0.35); font-weight: 700; }
+    # WHY THIS MATTERS prefix
+    why_html = f'<span class="why-matters">{escape(why)}</span> ' if why else ""
 
-  /* Card body */
-  .district-badge { font-size: 11px; color: var(--text-muted); margin-bottom: 8px; font-style: italic; }
-  .entry-content { font-size: 14.5px; color: var(--text-secondary); line-height: 1.72; }
-  .why-matters { font-weight: 600; color: var(--hmh-accent-dark); font-style: italic; margin-right: 4px; }
-  .source-link { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--hmh-accent-dark); text-decoration: none; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; margin-top: 8px; border-bottom: 1px solid rgba(var(--hmh-accent-rgb), 0.25); }
-  .source-link:hover { border-color: var(--hmh-pink); }
+    # SoundByte icon
+    sb_html = ""
+    if soundbyte and soundbyte.startswith("http"):
+        sb_html = (
+            f' <a href="{escape(soundbyte)}" target="_blank" '
+            f'title="Watch SoundByte commentary" style="text-decoration:none;">🎥</a>'
+        )
 
-  /* HMH Alert box */
-  .hot-analysis { margin-top: 12px; padding: 12px 16px; background: rgba(var(--hmh-accent-rgb), 0.04); border-left: 3px solid var(--hmh-accent); font-size: 13.5px; color: var(--hmh-navy); font-weight: 400; }
-  .hot-analysis::before { content: '📌 W/A Alert: '; font-weight: 700; color: var(--hmh-accent-dark); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; }
+    # Source link
+    link_html = ""
+    if link and link.startswith("http"):
+        link_html = (
+            f'\n        <br/><a class="source-link" href="{escape(link)}" target="_blank">'
+            f'View Source →</a>'
+        )
 
-  /* Section back-to-top */
-  .section-back-top { text-align: right; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border-light); }
-  .section-back-top a { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
-  .section-back-top a:hover { color: var(--hmh-accent-dark); }
+    # Client analysis (only for Cold-Hot == 3)
+    analysis_html = ""
+    if cold_hot == HOT_THRESHOLD:
+        analysis = client_analysis(record)
+        analysis_html = f'\n      <div class="hot-analysis">{escape(analysis)}</div>'
 
-  /* ── STATS BAR ───────────────────────────────────── */
-  .stats-bar { display: flex; gap: 1px; margin-bottom: 48px; background: #9AAFC8; }
-  .stat-block { flex: 1; background: #F4F7FB; padding: 20px 24px; text-align: center; }
-  .stat-number { font-family: 'Playfair Display', serif; font-size: 36px; font-weight: 700; line-height: 1; margin-bottom: 4px; }
-  .stat-number.hot    { color: var(--hmh-accent-dark); }
-  .stat-number.total  { color: var(--hmh-navy); }
-  .stat-number.states { color: var(--hmh-navy-mid); }
-  .stat-label { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-muted); font-weight: 600; }
-  .top-issues-block { text-align: left; padding: 14px 24px; }
-  .top-issues-list  { display: flex; flex-direction: column; gap: 4px; }
-  .top-issue        { display: flex; align-items: center; gap: 8px; font-size: 13px; }
-  .top-issue-rank   { font-family: 'Playfair Display', serif; font-weight: 700; font-size: 15px; color: var(--hmh-accent); width: 16px; text-align: center; }
-  .top-issue-name   { font-weight: 600; color: var(--text-primary); flex: 1; }
-  .top-issue-count  { font-family: 'Playfair Display', serif; font-weight: 700; font-size: 16px; color: var(--hmh-navy); }
-
-  .section-label { font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--hmh-accent-dark); font-weight: 700; margin-bottom: 32px; display: flex; align-items: center; gap: 12px; }
-  .section-label::after { content: ''; flex: 1; height: 1px; background: #9AAFC8; }
-
-  /* ── FOOTER & AUTOMATION PANEL ───────────────────── */
-  .memo-footer { margin-top: 64px; padding-top: 24px; border-top: 2px solid var(--hmh-navy); display: flex; justify-content: space-between; align-items: center; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
-  .footer-brand { font-family: 'Playfair Display', serif; font-size: 14px; font-weight: 700; color: var(--hmh-accent-dark); text-transform: none; letter-spacing: 0; }
-  .automation-panel { background: var(--hmh-navy); border: 1px solid rgba(var(--hmh-accent-rgb), 0.2); border-left: 4px solid var(--hmh-accent); padding: 14px 22px; margin-bottom: 28px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; font-size: 12px; }
-  .auto-label { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(255,200,220,0.8); font-weight: 700; white-space: nowrap; }
-  .auto-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: rgba(255,255,255,0.65); white-space: nowrap; }
-  .auto-badge strong { color: white; font-weight: 600; }
-  .auto-status { display: inline-flex; align-items: center; gap: 7px; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; padding: 4px 12px; }
-  .auto-status.active  { background: rgba(34,197,94,0.12); color: #4ADE80; border: 1px solid rgba(34,197,94,0.25); }
-  .auto-status.manual  { background: rgba(var(--hmh-accent-rgb), 0.10); color: #E8006B; border: 1px solid rgba(var(--hmh-accent-rgb), 0.3); }
-  .auto-status.pending { background: rgba(200,16,46,0.12);  color: #F87171; border: 1px solid rgba(200,16,46,0.25); }
-  .auto-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; background: currentColor; flex-shrink: 0; }
-  .auto-status.active .auto-dot { animation: pulse-dot 2s ease-in-out infinite; }
-  @keyframes pulse-dot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.7); } }
-  .auto-divider  { width: 1px; height: 22px; background: rgba(255,255,255,0.1); }
-  .auto-panel-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
-  .auto-script-tag { font-family: 'Courier New', monospace; font-size: 10px; color: rgba(255,255,255,0.35); background: rgba(255,255,255,0.05); padding: 2px 8px; border: 1px solid rgba(255,255,255,0.08); white-space: nowrap; }
-
-  /* ── BACK TO TOP ─────────────────────────────────── */
-  .back-to-top { position: fixed; bottom: 28px; right: 28px; width: 40px; height: 40px; background: var(--hmh-navy); color: white; border: none; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s, background 0.2s; pointer-events: none; z-index: 99; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
-  .back-to-top.visible { opacity: 1; pointer-events: auto; }
-  .back-to-top:hover { background: var(--hmh-pink); }
-
-  /* ── RESPONSIVE ──────────────────────────────────── */
-  @media (max-width: 700px) {
-    .memo-header-inner { padding: 28px 22px 22px; }
-    .memo-title { font-size: 24px; }
-    .masthead-eyebrow { gap: 8px; }
-    .confidential-pill { margin-left: 0; }
-    .memo-body { padding: 32px 20px 60px; }
-    .stats-bar { flex-direction: column; }
-    .state-toc { padding: 10px 16px; }
-    .toc-chip { padding: 2px 6px; font-size: 9px; }
-    .toc-heat-legend { display: none; }
-    .issue-filter-bar { padding: 8px 16px; }
-    .filter-status-bar { padding: 6px 16px; }
-    .automation-panel { flex-direction: column; align-items: flex-start; }
-    .auto-panel-right { margin-left: 0; }
-    .auto-divider { display: none; }
-    .video-pip { width: calc(100vw - 32px); right: 16px; bottom: 80px; }
-    .video-pip-launcher { right: 16px; }
-    .contact-fab {
-      left: 16px; bottom: 16px;
-      padding: 8px 13px 8px 9px;
-    }
-    .contact-fab .fab-icon { width: 20px; height: 20px; font-size: 11px; }
-    .contact-fab { font-size: 10px; }
-    .contact-modal { padding: 12px; }
-    .contact-modal-header { padding: 18px 18px 14px; }
-    .contact-form { padding: 14px 18px 18px; }
-  }
-  @media print {
-    .automation-panel, .state-toc, .back-to-top,
-    .issue-filter-bar, .filter-status-bar,
-    .video-pip, .video-pip-launcher,
-    .contact-fab, .contact-modal { display: none !important; }
-    body { background: white; font-size: 13px; }
-    .memo-body { padding: 24px 0; }
-    .entry-card { break-inside: avoid; }
-    .state-section { break-inside: avoid; }
-  }
-</style>
-</head>
-<body>
-
-<div id="page-top"></div>
-
-<!-- HEADER -->
-<header class="memo-header">
-  <div class="memo-header-inner">
-    <div class="masthead-eyebrow">
-      <span class="logo-pill">Whiteboard Advisors</span>
-      <span class="date-tag"><!-- PYTHON:HEADER_DATE_RANGE -->April 22, 2026 – April 27, 2026<!-- PYTHON:END_HEADER_DATE_RANGE --></span>
-      <span class="confidential-pill">Privileged &amp; Confidential</span>
-    </div>
-    <h1 class="memo-title">Market Intelligence <span>Topline</span></h1>
-    <p class="memo-subtitle">K–12 Education Policy · Action Score 3 · Rolling 7-Day Review</p>
-  </div>
-  <div class="masthead-rule"></div>
-</header>
-
-<!-- STATE QUICK-NAV -->
-<nav class="state-toc" id="state-nav">
-  <div class="toc-inner">
-    <div class="toc-label-row">
-      <div class="toc-label">
-        <span class="toc-label-text">Jump to State</span>
-        <span class="toc-heat-legend">
-          — shading = # of 🔥 Actionable (Score 3) items:
-          <span style="background:var(--hot-0-bg);border:1px solid var(--hot-0-border);color:var(--hot-0-color);padding:0 5px;border-radius:2px;font-size:9px;font-weight:700;">0</span>
-          <span style="background:var(--hot-1-bg);border:1px solid var(--hot-1-border);color:var(--hot-1-color);padding:0 5px;border-radius:2px;font-size:9px;font-weight:700;">1</span>
-          <span style="background:var(--hot-2-bg);border:1px solid var(--hot-2-border);color:var(--hot-2-color);padding:0 5px;border-radius:2px;font-size:9px;font-weight:700;">2</span>
-          <span style="background:var(--hot-3-bg);border:1px solid var(--hot-3-border);color:var(--hot-3-color);padding:0 5px;border-radius:2px;font-size:9px;font-weight:700;">3+</span>
-        </span>
-      </div>
-      <button class="filter-toggle-btn is-collapsed" id="filter-toggle-btn"
-              title="Toggle issue filter" aria-expanded="false" aria-controls="issue-filter-bar">
-        <i class="toggle-chevron">▸</i>
-        <span class="toggle-label">Issues</span>
-        <span class="filter-dot"></span>
-      </button>
-      <button class="nav-clear-btn" id="nav-clear-btn" title="Clear all active filters">
-        ✕ Clear filters
-      </button>
-    </div>
-    <!-- TOC:BEGIN -->
-    <div class="toc-chips">
-      <a href="#state-california" class="toc-chip hot-1" title="California — 1 items, 1 hot">CA</a>
-      <a href="#state-colorado" class="toc-chip hot-1" title="Colorado — 1 items, 1 hot">CO</a>
-      <a href="#state-connecticut" class="toc-chip hot-1" title="Connecticut — 1 items, 1 hot">CT</a>
-      <a href="#state-delaware" class="toc-chip hot-1" title="Delaware — 1 items, 1 hot">DE</a>
-      <a href="#state-florida" class="toc-chip hot-1" title="Florida — 1 items, 1 hot">FL</a>
-      <a href="#state-georgia" class="toc-chip hot-2" title="Georgia — 2 items, 2 hot">GA</a>
-      <a href="#state-idaho" class="toc-chip hot-1" title="Idaho — 1 items, 1 hot">ID</a>
-      <a href="#state-illinois" class="toc-chip hot-2" title="Illinois — 2 items, 2 hot">IL</a>
-      <a href="#state-kentucky" class="toc-chip hot-1" title="Kentucky — 1 items, 1 hot">KY</a>
-      <a href="#state-maine" class="toc-chip hot-1" title="Maine — 1 items, 1 hot">ME</a>
-      <a href="#state-massachusetts" class="toc-chip hot-3" title="Massachusetts — 3 items, 3 hot">MA</a>
-      <a href="#state-minnesota" class="toc-chip hot-1" title="Minnesota — 1 items, 1 hot">MN</a>
-      <a href="#state-missouri" class="toc-chip hot-2" title="Missouri — 2 items, 2 hot">MO</a>
-      <a href="#state-new-hampshire" class="toc-chip hot-3" title="New Hampshire — 7 items, 7 hot">NH</a>
-      <a href="#state-new-jersey" class="toc-chip hot-3" title="New Jersey — 9 items, 9 hot">NJ</a>
-      <a href="#state-new-mexico" class="toc-chip hot-1" title="New Mexico — 1 items, 1 hot">NM</a>
-      <a href="#state-new-york" class="toc-chip hot-2" title="New York — 2 items, 2 hot">NY</a>
-      <a href="#state-north-carolina" class="toc-chip hot-1" title="North Carolina — 1 items, 1 hot">NC</a>
-      <a href="#state-ohio" class="toc-chip hot-1" title="Ohio — 1 items, 1 hot">OH</a>
-      <a href="#state-oklahoma" class="toc-chip hot-1" title="Oklahoma — 1 items, 1 hot">OK</a>
-      <a href="#state-oregon" class="toc-chip hot-1" title="Oregon — 1 items, 1 hot">OR</a>
-      <a href="#state-pennsylvania" class="toc-chip hot-3" title="Pennsylvania — 3 items, 3 hot">PA</a>
-      <a href="#state-rhode-island" class="toc-chip hot-2" title="Rhode Island — 2 items, 2 hot">RI</a>
-      <a href="#state-tennessee" class="toc-chip hot-1" title="Tennessee — 1 items, 1 hot">TN</a>
-      <a href="#state-us" class="toc-chip hot-1" title="US — 1 items, 1 hot">US</a>
-      <a href="#state-vermont" class="toc-chip hot-2" title="Vermont — 2 items, 2 hot">VT</a>
-      <a href="#state-washington" class="toc-chip hot-1" title="Washington — 1 items, 1 hot">WA</a>
-    </div>
-  <!-- TOC:END -->
-  </div>
-</nav>
-
-<!-- ISSUE FILTER BAR — chips built dynamically from cards -->
-<div class="issue-filter-bar collapsed" id="issue-filter-bar">
-  <div class="issue-filter-inner">
-    <span class="issue-filter-label">Filter by Issue</span>
-    <span class="issue-chip all-chip active" data-issue="all">All</span>
-    <!-- chips injected by JS -->
-  </div>
-</div>
-
-<!-- FILTER STATUS BAR — shown by JS when any filter is active -->
-<div class="filter-status-bar" id="filter-status-bar" style="display:none;">
-  <div class="filter-status-inner" id="filter-status-inner">
-    <span class="status-label">Showing:</span>
-    <button class="filter-clear-all" id="filter-clear-all">✕ Clear all filters</button>
-  </div>
-</div>
-
-<!-- Video Overview — collapsible / pop-out PiP widget -->
-<div class="video-pip collapsed" id="video-pip" role="region" aria-label="Video Overview">
-  <div class="video-pip-header" id="video-pip-header">
-    <span class="video-pip-icon">🎬</span>
-    <span class="video-pip-title">Video Overview</span>
-    <button class="video-pip-btn" id="video-pip-popout" type="button"
-            title="Open in new window" aria-label="Open video in new window">⧉</button>
-    <button class="video-pip-btn" id="video-pip-toggle" type="button"
-            title="Expand video" aria-label="Expand video">▸</button>
-    <button class="video-pip-btn" id="video-pip-close" type="button"
-            title="Hide video" aria-label="Hide video">✕</button>
-  </div>
-  <div class="video-pip-body" id="video-pip-body" hidden>
-    <!-- iframe injected by JS on first expand to avoid loading the player up front -->
-  </div>
-</div>
-<button class="video-pip-launcher" id="video-pip-launcher" type="button"
-        title="Show Video Overview" aria-label="Show Video Overview">🎬</button>
-
-<!-- MAIN BODY -->
-<main class="memo-body">
-
-  <!-- ════ OVERVIEW BLOCK — data leads, prose supports ════ -->
-  <section class="overview-block">
-    <div class="overview-eyebrow">
-      <span class="overview-period">📅 <!-- PYTHON:OVERVIEW_PERIOD -->April 22, 2026 – April 27, 2026<!-- PYTHON:END_OVERVIEW_PERIOD --></span>
-      <span class="overview-window">Rolling 7-Day Window · Action Score 3 (Actionable) only</span>
-    </div>
-
-    <div class="overview-stats">
-      <div class="big-stat">
-        <div class="stat-number total">51</div>
-        <div class="stat-label">Actionable Items</div>
-      </div>
-      <div class="big-stat">
-        <div class="stat-number states">27</div>
-        <div class="stat-label">States</div>
-      </div>
-      <div class="big-stat top-issues">
-        <div class="stat-label">Top Issues This Period</div>
-        <!-- TOP_ISSUES:BEGIN -->
-      <div class="top-issues-list">
-        <div class="top-issue"><span class="top-issue-rank">1</span><span class="top-issue-name">Budget</span><span class="top-issue-count">16</span></div>
-        <div class="top-issue"><span class="top-issue-rank">2</span><span class="top-issue-name">Screen time</span><span class="top-issue-count">6</span></div>
-        <div class="top-issue"><span class="top-issue-rank">3</span><span class="top-issue-name">Reading</span><span class="top-issue-count">6</span></div>
-        <div class="top-issue"><span class="top-issue-rank">4</span><span class="top-issue-name">Math</span><span class="top-issue-count">4</span></div>
-        <div class="top-issue"><span class="top-issue-rank">5</span><span class="top-issue-name">Finance</span><span class="top-issue-count">3</span></div>
-      </div>
-  <!-- TOP_ISSUES:END -->
+    return f"""\
+  <!-- ════ {escape(state).upper()} · {escape(issue).upper()} ════ -->
+  <div class="entry-card {card_cls}">
+    <div class="entry-meta">
+      <span class="meta-chip level">Level: {escape(sector)}</span>
+      <span class="meta-chip issue">{escape(issue)}</span>
+      <span class="meta-chip date">{escape(display_date)}</span>
+      {bg_chip}
+      <div class="actionable-score">
+        <span class="score-dot {dot_cls}"></span>
+        <span class="score-label-{level_n}">Action Score: {cold_hot}</span>
       </div>
     </div>
+    <div class="district-badge">{escape(district)}</div>
+    <div class="entry-content">
+      {why_html}{escape(content)}{sb_html}{link_html}
+    </div>{analysis_html}
+  </div>"""
 
-    <div class="overview-prose">
-      <span class="prose-note">
-        Highest-signal K–12 policy items, drawn from <strong>Whiteboard Advisors Review and Analysis</strong>. Budget &amp; Finance items show direction:
-        <span class="badge-inline declining">📉 Declining</span>
-        <span class="badge-inline flat">➡ Flat</span>
-        <span class="badge-inline improving">📈 Improving</span>.
-        🎬 = video commentary attached.
-      </span>
-      <span class="prose-links">
-        <a class="dashboard-link" href="https://whiteboardadvisors.wistia.com/medias/9ajjofduyg" target="_blank">🎬 Video Overview</a>
-        <a class="dashboard-link" href="https://prod-useast-a.online.tableau.com/t/whiteboardinsights/views/TheEducationTrendReport/TheTrendReport" target="_blank">Trend Report Dashboard</a>
-        <button type="button" class="contact-inline" data-open-contact>Email David</button>
-      </span>
-    </div>
-  </section>
 
-  <!-- UPDATES:SECTION_LABEL -->
-  <div class="section-label">State-by-State Briefings</div>
-  <!-- UPDATES:END_SECTION_LABEL -->
+def group_by_state(updates):
+    """Group records by state and return list of (state, [records]) tuples."""
+    groups = {}
+    for r in updates:
+        state = safe(r.get(STATE_COL, "Unknown"))
+        groups.setdefault(state, []).append(r)
+    return sorted(groups.items())
 
+
+def build_state_section(state, records):
+    abbrev = safe(records[0].get("State Abbrev", state[:2].upper()))
+    count  = len(records)
+    items_label = "item" if count == 1 else "items"
+    cards  = "\n\n".join(build_entry_card(r) for r in records)
+    return f"""\
   <!-- ════════════════════════════════════════
-       UPDATES INJECTION ZONE
-       - Everything between UPDATES:BEGIN and UPDATES:END
-         is fully replaced by update_from_sheets.py on each run.
-       - Filters: Bad-Good == 3, rolling last 10 days from Google Sheet.
-       - Do NOT manually edit content inside this block.
+       {state.upper()}
   ════════════════════════════════════════ -->
-  <!-- UPDATES:BEGIN -->
-  <div class="state-section" id="state-california">
+  <div class="state-section">
     <div class="state-header">
-      <span class="state-name">California</span>
-      <span class="state-abbrev">CA</span>
-      <span class="state-count">1 item</span>
-    </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: State</span>
-      <span class="meta-chip issue">Budget</span>
-      <span class="meta-chip date">May 1, 2026</span>
-      <span class="badgood-tag badgood-1">📉 Declining</span>
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">California - State Level</div>
-    <div class="entry-content">
-      Technical errors&#x27; lead to over-estimating CA budget deficit by $2B for next fiscal year: California’s projected FY2027 deficit fell from $2.9 billion to under $1 billion after the Legislative Analyst’s Office identified technical errors in CalPERS calculations. The change may affect May budget revisions and negotiations before lawmakers’ June 15 deadline.
-        <br/><a class="source-link" href="https://www.abc10.com/article/entertainment/television/programs/to-the-point/technical-errors-lead-to-over-estimating-ca-budget-deficit-by-2b-for-next-fiscal-year/103-293ed602-68c7-432a-b848-ec346b8bae1d" target="_blank">View Source →</a>
-    </div>
-  </div>
-    <div class="section-back-top"><a href="#page-top" class="back-to-top-link">↑ Back to top</a></div>
-  </div>
-
-  <div class="state-section" id="state-colorado">
-    <div class="state-header">
-      <span class="state-name">Colorado</span>
-      <span class="state-abbrev">CO</span>
-      <span class="state-count">1 item</span>
-    </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: State</span>
-      <span class="meta-chip issue">Budget</span>
-      <span class="meta-chip date">May 1, 2026</span>
-      <span class="badgood-tag badgood-2">➡ Flat</span>
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">Colorado - State Level</div>
-    <div class="entry-content">
-      Colorado legislature sends $46.8B state budget to governor’s desk after final round of tweaks: Colorado’s FY2027 budget addresses a roughly $1.5 billion shortfall with broad cuts, including Medicaid reductions. Lawmakers preserved one additional year of a fifth- and sixth-year high school teacher-preparation pathway, while potential Pinnacol privatization revenue could add $100 million for schools.
-        <br/><a class="source-link" href="https://coloradosun.com/2026/04/28/colorado-budget-passes/" target="_blank">View Source →</a>
-    </div>
-  </div>
-    <div class="section-back-top"><a href="#page-top" class="back-to-top-link">↑ Back to top</a></div>
-  </div>
-
-  <div class="state-section" id="state-connecticut">
-    <div class="state-header">
-      <span class="state-name">Connecticut</span>
-      <span class="state-abbrev">CT</span>
-      <span class="state-count">1 item</span>
-    </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: District</span>
-      <span class="meta-chip issue">Budget</span>
-      <span class="meta-chip date">May 6, 2026</span>
-      <span class="badgood-tag badgood-3">📈 Improving</span>
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">CT, RIDGEFIELD SCHOOL DISTRICT</div>
-    <div class="entry-content">
-      <span class="why-matters">Hot Take: Pay attention to this new finance law. It may be a big deal that allows for more strategic multi-year funding.</span> State Legislative Updates: The meeting repeatedly referenced recent Connecticut legislative changes that required policy revisions. Board members reviewed Public Act 24-45 transferring non-lapsing account authority from the Board of Finance to the Board of Education and updated medication policies tied to new statutory language permitting nasal spray delivery systems. Paradiso stated, “The first one was a Connecticut law change, Public Act 24-45.” (Timestamp: 01:26-02:24; 01:09:19-01:10:21) This is a new reserve mechanism that allows the Board of Education to carry over a limited amount of unspent funds from one fiscal year into future years instead of automatically returning all surplus money to the town at year-end. The authority comes from Connecticut Public Act 24-45, which shifted authority for these accounts from the Board of Finance to the Board of Education. Paradiso explained that the change “gives authority to the board of education to be able to set up a non-lapsing account.” (Timestamp: 34:10-34:24)
-        <br/><a class="source-link" href="https://www.youtube.com/watch?v=7F1CgcKXwuI" target="_blank">View Source →</a>
-    </div>
-  </div>
-    <div class="section-back-top"><a href="#page-top" class="back-to-top-link">↑ Back to top</a></div>
-  </div>
-
-  <div class="state-section" id="state-delaware">
-    <div class="state-header">
-      <span class="state-name">Delaware</span>
-      <span class="state-abbrev">DE</span>
-      <span class="state-count">1 item</span>
-    </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: State</span>
-      <span class="meta-chip issue">Funding</span>
-      <span class="meta-chip date">May 5, 2026</span>
-      
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">Delaware - State Level</div>
-    <div class="entry-content">
-      ‘Plain, common sense’: Legislation to revamp Delaware’s school funding formula goes to lawmakers in May: Delaware lawmakers will consider two bills sponsored by Sen. Laura Sturgeon and Rep. Kim Williams to create a hybrid school funding formula and extend the Public Education Funding Commission. The model adds weights of $3,343 for low-income students and $2,328 for multilingual learners, with $2.8 million for FY2027 planning and up to $200 million for FY2028 phase one.
-        <br/><a class="source-link" href="https://whyy.org/articles/delaware-school-funding-formula-legislation/" target="_blank">View Source →</a>
-    </div>
-  </div>
-    <div class="section-back-top"><a href="#page-top" class="back-to-top-link">↑ Back to top</a></div>
-  </div>
-
-  <div class="state-section" id="state-florida">
-    <div class="state-header">
-      <span class="state-name">Florida</span>
-      <span class="state-abbrev">FL</span>
-      <span class="state-count">1 item</span>
-    </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: State</span>
-      <span class="meta-chip issue">Budget</span>
-      <span class="meta-chip date">May 1, 2026</span>
-      <span class="badgood-tag badgood-2">➡ Flat</span>
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">Florida - State Level</div>
-    <div class="entry-content">
-      Initial budget deal reached, Florida special session set For May: Florida legislative leaders reached top-line budget allocations after the regular session ended without a spending plan. House and Senate differences remain over a $300 million gap in school funding and whether the $4.5 billion universal voucher program should be included in the main school funding formula.
-        <br/><a class="source-link" href="https://www.nbcmiami.com/news/local/initial-budget-deal-reached-florida-special-session-set-for-may/3800102/" target="_blank">View Source →</a>
-    </div>
-  </div>
-    <div class="section-back-top"><a href="#page-top" class="back-to-top-link">↑ Back to top</a></div>
-  </div>
-
-  <div class="state-section" id="state-georgia">
-    <div class="state-header">
-      <span class="state-name">Georgia</span>
-      <span class="state-abbrev">GA</span>
-      <span class="state-count">2 items</span>
-    </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: District</span>
-      <span class="meta-chip issue">Finance</span>
-      <span class="meta-chip date">April 30, 2026</span>
-      <span class="badgood-tag badgood-2">➡ Flat</span>
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">GA, CHEROKEE COUNTY</div>
-    <div class="entry-content">
-      <span class="why-matters">Hot Take: this is a weedy issue on school finance and local revenue cap, but it&#x27;s critically important, especially in this day where health care costs have been rising for school districts. This is a huge budget crunch. Also worth noting: the review of legislative bills for 2026. Good summary here. Take time to check it out.</span> State Budget / Legislative Updates: At 01:00:11–01:06:32, the board reviews a wide range of Georgia legislative activity with direct fiscal and operational implications. Of over 200 education bills introduced, 40 reached the governor, including measures on math, literacy, devices, and funding. The most significant budget concern is Senate Bill 33, which would cap property tax revenue growth at roughly 3%, below the district’s 4% projection. Officials warn this gap could reduce annual revenue growth by millions and compound over time, affecting salaries, class sizes, and long-term planning. As explained, “this cap will subsequently constrain our local revenue growth… which could directly impact the school board’s ability to meet their priority to remain competitive with employee salaries” (Gwynn). Additional bills discussed include increased employee personal leave (SB 148), which may raise substitute costs, and mandates for faster enrollment of foster students (SB 431), requiring operational readiness. The legislative update underscores that while the current FY27 budget is stable, future financial flexibility is increasingly dependent on state policy decisions
-        <br/><a class="source-link" href="https://youtu.be/EN93D3kUaLY" target="_blank">View Source →</a>
-    </div>
-  </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: District</span>
-      <span class="meta-chip issue">Math</span>
-      <span class="meta-chip date">April 30, 2026</span>
-      
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">GA, CHEROKEE COUNTY</div>
-    <div class="entry-content">
-      <span class="why-matters">Hot Take: the focus on at least 60 min of daily math is interesting (to me).  Time on task, baby.</span> Math Policy Updates: At 01:01:46–01:02:13, the “Math Matters Act” expands advanced math access and mandates instructional time, aligning with district priorities. As noted, the bill “will expand access to advanced math courses… and require minimum instruction time” (Gwynn). House Bill 1030, the “Math Matters Act,” represents a significant statewide push to strengthen math achievement and access. The legislation would expand the availability of advanced math coursework across grade levels and require automatic enrollment for high-performing students, reducing barriers to acceleration. It also mandates a minimum of 60 minutes of daily math instruction in grades four and five—an expectation the district already meets—positioning the district ahead of compliance requirements. See the agenda detaile here: 1WorkSessionAgendaCover04232026.pdf
-        <br/><a class="source-link" href="https://youtu.be/EN93D3kUaLY" target="_blank">View Source →</a>
-    </div>
-  </div>
-    <div class="section-back-top"><a href="#page-top" class="back-to-top-link">↑ Back to top</a></div>
-  </div>
-
-  <div class="state-section" id="state-idaho">
-    <div class="state-header">
-      <span class="state-name">Idaho</span>
-      <span class="state-abbrev">ID</span>
-      <span class="state-count">1 item</span>
-    </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: State</span>
-      <span class="meta-chip issue">ESEA Waivers</span>
-      <span class="meta-chip date">May 5, 2026</span>
-      
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">Idaho - State Level</div>
-    <div class="entry-content">
-      ESEA Waiver Updates: The board reviewed and approved an ESEA waiver request to replace a duplicative statewide English Language Arts assessment with the Idaho Reading Indicator, aiming to reduce over-testing while maintaining federal compliance and instructional coverage. A leader noted, “We are requesting that one summative test replace a duplicative summative test” (02:32:04).
-        <br/><a class="source-link" href="https://www.youtube.com/watch?v=btsTCOWwkb0" target="_blank">View Source →</a>
-    </div>
-  </div>
-    <div class="section-back-top"><a href="#page-top" class="back-to-top-link">↑ Back to top</a></div>
-  </div>
-
-  <div class="state-section" id="state-illinois">
-    <div class="state-header">
-      <span class="state-name">Illinois</span>
-      <span class="state-abbrev">IL</span>
-      <span class="state-count">2 items</span>
-    </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: District</span>
-      <span class="meta-chip issue">Budget</span>
-      <span class="meta-chip date">May 5, 2026</span>
-      <span class="badgood-tag badgood-1">📉 Declining</span>
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">IL, EVANSTON CCSD 65</div>
-    <div class="entry-content">
-      District Budget Forecast: The meeting heavily focused on a structural budget deficit, with leadership and community members discussing ongoing efforts to close a $6.3 million gap and projecting continued future shortfalls. Concerns included sustainability of cuts and long-term planning. One speaker warned, “This is a budget crisis, and we need to start treating it that way” (Speaker, 44:19).
-        <br/><a class="source-link" href="https://youtu.be/4L410C-s44U" target="_blank">View Source →</a>
-    </div>
-  </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: District</span>
-      <span class="meta-chip issue">Screen time</span>
-      <span class="meta-chip date">May 5, 2026</span>
-      
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">IL, EVANSTON CCSD 65</div>
-    <div class="entry-content">
-      <span class="why-matters">Hot Take: Here&#x27;s the key part - &quot;Parents also called for actionable steps, including monitoring student device usage, increasing transparency on screen time data.&quot;</span> Screen Time or Education Technology Concerns: The meeting featured extensive and detailed public concern about student screen time, educational technology use, and student data privacy, with speakers urging the board to adopt clearer policies and reduce reliance on devices. Parents cited national trends and proposed limits similar to LAUSD, including eliminating screens for early grades and setting usage caps. Concerns extended beyond instructional practice to student data security, with warnings that platforms like iReady may collect “vast amounts of personal information… used to predict and influence behavior” (Speaker, 31:22). Community members emphasized both developmental and financial tradeoffs, arguing that excessive technology use may undermine human-centered learning and divert resources during a budget crisis. One speaker stated, “What research-backed educational benefits do our kids actually receive from those tech expenditures?” (Speaker, 33:29), while another stressed, “The future of education is not iPads… it’s about human connection” (Speaker, 32:53). Parents also called for actionable steps, including monitoring student device usage, increasing transparency on screen time data, and allowing families to opt out of non-essential technology use. The discussion reflects a growing grassroots movement within the district to rebalance technology with traditional instructional approaches and prioritize student well-being.
-        <br/><a class="source-link" href="https://youtu.be/4L410C-s44U" target="_blank">View Source →</a>
-    </div>
-  </div>
-    <div class="section-back-top"><a href="#page-top" class="back-to-top-link">↑ Back to top</a></div>
-  </div>
-
-  <div class="state-section" id="state-kentucky">
-    <div class="state-header">
-      <span class="state-name">Kentucky</span>
-      <span class="state-abbrev">KY</span>
-      <span class="state-count">1 item</span>
-    </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: State</span>
-      <span class="meta-chip issue">Budget</span>
-      <span class="meta-chip date">May 1, 2026</span>
-      <span class="badgood-tag badgood-2">➡ Flat</span>
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">Kentucky - State Level</div>
-    <div class="entry-content">
-      2026-2028 EXECUTIVE BUDGET: Kentucky’s executive budget recommends Department of Education spending of $6.57 billion in FY2027 and $6.72 billion in FY2028, alongside fully funded teachers’ pension and medical benefits. K-12 priorities include SEEK, school facilities, health insurance support for local districts, and $40.5 million for Pre-K for All in FY2028.
-        <br/><a class="source-link" href="https://osbd.ky.gov/Publications/Documents/Budget%20Documents/2026-2028%20Executive%20Budget%20Recommendation/2026-28%20Executive%20Budget%20-%20Operating%20Budget%20-%20Volume%20I.pdf" target="_blank">View Source →</a>
-    </div>
-  </div>
-    <div class="section-back-top"><a href="#page-top" class="back-to-top-link">↑ Back to top</a></div>
-  </div>
-
-  <div class="state-section" id="state-maine">
-    <div class="state-header">
-      <span class="state-name">Maine</span>
-      <span class="state-abbrev">ME</span>
-      <span class="state-count">1 item</span>
-    </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: State</span>
-      <span class="meta-chip issue">Teachers</span>
-      <span class="meta-chip date">May 4, 2026</span>
-      
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">Maine - State Level</div>
-    <div class="entry-content">
-      Maine approves teacher pay increase as salaries lag behind inflation: Maine’s supplemental budget will raise the minimum teacher salary to $50,000 by 2029 as new teacher pay and education support professional wages trail inflation. The state ranks 29th nationally for average teacher pay and 41st for starting salaries, while districts face vacancies and educators report taking second jobs.
-        <br/><a class="source-link" href="https://mainebeacon.com/maine-approves-teacher-pay-increase-as-salaries-lag-behind-inflation/" target="_blank">View Source →</a>
-    </div>
-  </div>
-    <div class="section-back-top"><a href="#page-top" class="back-to-top-link">↑ Back to top</a></div>
-  </div>
-
-  <div class="state-section" id="state-massachusetts">
-    <div class="state-header">
-      <span class="state-name">Massachusetts</span>
-      <span class="state-abbrev">MA</span>
-      <span class="state-count">3 items</span>
-    </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: District</span>
-      <span class="meta-chip issue">Budget</span>
-      <span class="meta-chip date">May 6, 2026</span>
-      <span class="badgood-tag badgood-3">📈 Improving</span>
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">MA, SHREWSBURY</div>
-    <div class="entry-content">
-      District Budget Forecast: District leaders presented an updated FY2027 budget recommendation of $94.4 million, emphasizing financial stability created by the 2021 override agreement while addressing rising special education and transportation costs. Superintendent Joe Sawyer stated, “This is a good news story,” highlighting preserved staffing and programming despite statewide fiscal challenges. Timestamp: 1:18:02–1:54:16
-        <br/><a class="source-link" href="https://www.youtube.com/watch?v=wJCHxoNRyag" target="_blank">View Source →</a>
-    </div>
-  </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: District</span>
-      <span class="meta-chip issue">CTE</span>
-      <span class="meta-chip date">May 6, 2026</span>
-      
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">MA, CLINTON</div>
-    <div class="entry-content">
-      At 30:17 and 46:59, district officials referenced ongoing state policy developments involving Chapter 70 aid, the Student Opportunity Act, vocational expansion funding, and MSBA construction flexibility. Administrators observed, “MSBA’s allowing them to do a lot of that,” while connecting state actions to local educational planning, facility improvements, and workforce development priorities.
-        <br/><a class="source-link" href="https://www.youtube.com/watch?v=fScsqUURf4o" target="_blank">View Source →</a>
-    </div>
-  </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: District</span>
-      <span class="meta-chip issue">Screen time</span>
-      <span class="meta-chip date">May 5, 2026</span>
-      
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">MA, SCITUATE</div>
-    <div class="entry-content">
-      Education Technology / Screen Time Concerns (01:35:34–01:36:11) Concerns about screen time’s impact on learning interest were discussed, with plans for parent outreach and balanced perspectives on technology use. “We would love to have some sort of parent outreach about the impact of screen time on students” (Sheehan).
-        <br/><a class="source-link" href="https://www.youtube.com/watch?v=Gk_45_I-Ky0" target="_blank">View Source →</a>
-    </div>
-  </div>
-    <div class="section-back-top"><a href="#page-top" class="back-to-top-link">↑ Back to top</a></div>
-  </div>
-
-  <div class="state-section" id="state-minnesota">
-    <div class="state-header">
-      <span class="state-name">Minnesota</span>
-      <span class="state-abbrev">MN</span>
-      <span class="state-count">1 item</span>
-    </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: State</span>
-      <span class="meta-chip issue">Priorities</span>
-      <span class="meta-chip date">May 1, 2026</span>
-      
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">Minnesota - State Level</div>
-    <div class="entry-content">
-      Tim Walz delivers final State of the State as Minnesota governor. Read what he said.: Walz cited record-high graduation rates, major education budgets, expanded pre-K, literacy investments, student mental health supports, free college for families under $80,000, and the Minnesota Free School Meals Program. He proposed expanding the Dependent Care Tax Credit and called for more school-based gun violence prevention resources.
-        <br/><a class="source-link" href="https://www.cbsnews.com/minnesota/news/tim-walz-state-of-the-state-2026-transcript/" target="_blank">View Source →</a>
-    </div>
-  </div>
-    <div class="section-back-top"><a href="#page-top" class="back-to-top-link">↑ Back to top</a></div>
-  </div>
-
-  <div class="state-section" id="state-missouri">
-    <div class="state-header">
-      <span class="state-name">Missouri</span>
-      <span class="state-abbrev">MO</span>
-      <span class="state-count">2 items</span>
-    </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: District</span>
-      <span class="meta-chip issue">HQIM</span>
-      <span class="meta-chip date">May 6, 2026</span>
-      
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">MO, CLAYTON</div>
-    <div class="entry-content">
-      High-Quality Instructional Materials (HQIM): District leaders discussed curriculum audits, standards alignment, authentic assessments, and instructional consistency tied to literacy reform efforts. Staff described reviewing curriculum resources against Missouri standards and science-of-reading expectations to ensure rigorous and responsive instruction. One presenter stated the district would “conduct an audit of the K-12 curriculum and examining the literacy of the text and authors.”
-        <br/><a class="source-link" href="https://www.youtube.com/watch?v=xA38JzpjCNM" target="_blank">View Source →</a>
-    </div>
-  </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: District</span>
-      <span class="meta-chip issue">Reading</span>
-      <span class="meta-chip date">May 6, 2026</span>
-      
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">MO, CLAYTON</div>
-    <div class="entry-content">
-      Literacy Initiatives: District leaders described a multi-year literacy overhaul driven by Missouri Senate Bill 681 and science-of-reading requirements. Staff revised K-8 curriculum, expanded LETRS training, implemented readers-writers workshops, and created K-12 literacy interventions with data tracking through EduClimber. One administrator explained, “we had to make it more explicit systematic and focusing on the five components” identified by the National Reading Panel.
-        <br/><a class="source-link" href="https://www.youtube.com/watch?v=xA38JzpjCNM" target="_blank">View Source →</a>
-    </div>
-  </div>
-    <div class="section-back-top"><a href="#page-top" class="back-to-top-link">↑ Back to top</a></div>
-  </div>
-
-  <div class="state-section" id="state-new-hampshire">
-    <div class="state-header">
-      <span class="state-name">New Hampshire</span>
-      <span class="state-abbrev">NH</span>
-      <span class="state-count">7 items</span>
-    </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: District</span>
-      <span class="meta-chip issue">Absenteeism</span>
-      <span class="meta-chip date">May 4, 2026</span>
-      
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">NH, LONDONDERRY SCHOOL DISTRICT</div>
-    <div class="entry-content">
-      Absenteeism: At 1:01:00, Superintendent Byron identified attendance improvement as a new district priority, describing efforts to address chronic absenteeism and improve communication with families. He explained, “We have to really preach the importance of school,” while previewing upcoming policy and procedural changes aimed at strengthening attendance systems and family partnerships
-        <br/><a class="source-link" href="https://www.youtube.com/watch?v=R8YG9lfnZWI" target="_blank">View Source →</a>
-    </div>
-  </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: District</span>
-      <span class="meta-chip issue">Budget</span>
-      <span class="meta-chip date">May 4, 2026</span>
-      <span class="badgood-tag badgood-1">📉 Declining</span>
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">NH, STRAFFORD SCHOOL DISTRICT</div>
-    <div class="entry-content">
-      <span class="why-matters">Hot take: it&#x27;s not surprising that special education &quot;overages&quot; are creating some budget stress. This is a similar story across the country</span> District Budget Forecast: Beginning near 17:05 and continuing through 27:00, district leaders warned that special education tuition and transportation overages significantly reduced anticipated fund balance projections. The board discussed freezing nonessential spending to protect operations through year-end. Rob cautioned, “We have really overspent on special ed this year,” while outlining contingency reserves.
-        <br/><a class="source-link" href="https://www.youtube.com/watch?v=iGuskj0Cz_w" target="_blank">View Source →</a>
-    </div>
-  </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: District</span>
-      <span class="meta-chip issue">Budget</span>
-      <span class="meta-chip date">May 4, 2026</span>
-      <span class="badgood-tag badgood-1">📉 Declining</span>
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">NH, STRAFFORD SCHOOL DISTRICT</div>
-    <div class="entry-content">
-      Literacy Initiatives: Around 1:36:28, the district introduced elementary literacy WIN blocks dedicated to tiered instruction and intervention services. Reading interventionists will provide intensive support for struggling students while classroom teachers lead small-group instruction and enrichment activities. Natalie stated, “WIN stands for what I need,” describing targeted literacy intervention and extension strategies. Between 1:36:28 and 1:38:09, leaders described a multi-tiered support framework using literacy and math WIN blocks, interventionists, SEL programming, executive functioning groups, and targeted small-group instruction. (MTSS)
-        <br/><a class="source-link" href="https://www.youtube.com/watch?v=iGuskj0Cz_w" target="_blank">View Source →</a>
-    </div>
-  </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: State</span>
-      <span class="meta-chip issue">CTE</span>
-      <span class="meta-chip date">May 4, 2026</span>
-      
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">New Hampshire - State Level</div>
-    <div class="entry-content">
-      Career and Technical Education (CTE): From 02:05:24–02:13:39 and 02:24:37–02:31:58, the committee advanced amendments expanding career and technical education funding and debated cosmetology programming through community colleges. Lawmakers also separated transportation and tuition reimbursements for CTE centers. Representative Peoples described the proposal as “a bridge between the CTE centers and the community colleges.”
-        <br/><a class="source-link" href="https://www.youtube.com/watch?v=XqMYK7lxGEw" target="_blank">View Source →</a>
-    </div>
-  </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: State</span>
-      <span class="meta-chip issue">Math</span>
-      <span class="meta-chip date">May 4, 2026</span>
-      
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">New Hampshire - State Level</div>
-    <div class="entry-content">
-      Math Policy Updates: At 13:31–18:17, lawmakers debated overhauling New Hampshire’s math standards after discussing high remediation rates in community colleges and declining middle-school performance. Representative Rick Ladd advocated aligning curriculum, instruction, and assessment statewide while describing intervention-based math scheduling. Ladd warned, “We need to be looking at what we&#x27;re doing in the elementary schools and middle schools.”
-        <br/><a class="source-link" href="https://www.youtube.com/watch?v=XqMYK7lxGEw" target="_blank">View Source →</a>
-    </div>
-  </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: District</span>
-      <span class="meta-chip issue">Reading</span>
-      <span class="meta-chip date">May 4, 2026</span>
-      
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">NH, CONCORD SCHOOL DISTRICT</div>
-    <div class="entry-content">
-      Literacy Initiatives: At 15:12–35:25, administrators and teachers presented a comprehensive K–6 literacy overhaul through the adoption of MyView/MyPerspectives, emphasizing science-of-reading alignment, vocabulary development, multilingual learner supports, and consistent instruction. Emily Bemis stated, “we need a program that focuses on the basics for students.”
-        <br/><a class="source-link" href="https://www.youtube.com/watch?v=n-YNTg05sgo" target="_blank">View Source →</a>
-    </div>
-  </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: District</span>
-      <span class="meta-chip issue">Screen time</span>
-      <span class="meta-chip date">May 4, 2026</span>
-      
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">NH, CONCORD SCHOOL DISTRICT</div>
-    <div class="entry-content">
-      <span class="why-matters">Key Quote: Trying to get to paper-based.</span> Screen Time or Education Technology Concerns: At 20:07–21:32 and 51:44–52:28, board members questioned device dependence and online learning tools. Staff clarified that literacy and math programs included both digital and paper-based options. Emily Bemis emphasized, “we’re really trying to get pencil to paper,” while explaining technology would supplement rather than dominate instruction.
-        <br/><a class="source-link" href="https://www.youtube.com/watch?v=n-YNTg05sgo" target="_blank">View Source →</a>
-    </div>
-  </div>
-    <div class="section-back-top"><a href="#page-top" class="back-to-top-link">↑ Back to top</a></div>
-  </div>
-
-  <div class="state-section" id="state-new-jersey">
-    <div class="state-header">
-      <span class="state-name">New Jersey</span>
-      <span class="state-abbrev">NJ</span>
-      <span class="state-count">9 items</span>
-    </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: District</span>
-      <span class="meta-chip issue">Budget</span>
-      <span class="meta-chip date">May 6, 2026</span>
-      <span class="badgood-tag badgood-2">➡ Flat</span>
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">NJ, MIDDLESEX BOROUGH SCHOOL DISTRICT</div>
-    <div class="entry-content">
-      District Budget Forecast: The meeting heavily focused on the 2026–2027 district budget, with administrators emphasizing fiscal stewardship amid rising healthcare, special education, and salary costs while preserving student programs and services. Officials highlighted strategic planning, preschool expansion, grant funding, and operational efficiency. Community members challenged the transparency of the proposed tax levy increase, questioning whether the district accurately represented a 7% increase as only 2%. One resident stated, “I was just concerned that you were portraying this as a 2% tax increase when it&#x27;s actually a 7% tax increase,” while district leadership responded that the additional increase came through “banked cap plus the health insurance waiver.” (Timestamp: 07:12–14:01). The district specifically mentions increased state aid, preschool aid, and state-supported grants for literacy initiatives. During the budget presentation, administrators said, “While state aid has increased, rising costs persist, necessitating careful management of our resources,” indicating that New Jersey state funding was helping offset some financial pressures but not fully covering rising expenses. (Timestamp: 08:35–08:47)
-        <br/><a class="source-link" href="https://www.youtube.com/watch?v=9NXpyaa-Vh0" target="_blank">View Source →</a>
-    </div>
-  </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: District</span>
-      <span class="meta-chip issue">Budget</span>
-      <span class="meta-chip date">May 6, 2026</span>
-      <span class="badgood-tag badgood-2">➡ Flat</span>
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">NJ, NORTHERN BURLINGTON COUNTY REGIONAL SCHOOL DISTRICT</div>
-    <div class="entry-content">
-      District Budget Forecast (12:05-13:27; 47:51-01:11:48): District leaders presented the 2026-27 budget, highlighting rising healthcare, prescription, special education, and operational costs alongside uncertainty in state aid and federal grants. The administration outlined staffing reductions, use of banked cap flexibility, and other cuts to close budget gaps while maintaining programs and class sizes. “Healthcare increases are astronomical… our medical is renewing at 13.4%.” — Mrs. Williams.
-        <br/><a class="source-link" href="https://www.youtube.com/watch?v=RVtpubmAM8o" target="_blank">View Source →</a>
-    </div>
-  </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: District</span>
-      <span class="meta-chip issue">CTE</span>
-      <span class="meta-chip date">May 6, 2026</span>
-      
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">NJ, EAST BRUNSWICK TOWNSHIP SCHOOL DISTRICT</div>
-    <div class="entry-content">
-      District Budget Forecast: At 33:37–47:10, East Brunswick school officials presented the culmination of months of difficult budget planning to address a projected $5.5 million deficit while preserving core academic and extracurricular programs. Administrators explained that reductions included staffing adjustments through attrition, transportation contract savings, operational cuts, and increased activity fees, while emphasizing that no academic programs were eliminated. Superintendent Mammon stressed that the district’s strategy focused on “right sizing” based on enrollment trends and student participation rather than broad program cuts, noting, “Our goal was not to deplete any one area. It’s to shave.” Officials also highlighted the addition of an elementary instructional coach to support implementation of a new literacy curriculum despite overall reductions. Business Administrator Joe Valeski confirmed the district achieved a legally required balanced budget and warned that reducing the proposed 6.16% tax increase would require an additional $1.5 million in cuts. Superintendent Mammon acknowledged the emotional toll of the process, stating, “We are legally required to have a balanced budget, and we do.”
-        <br/><a class="source-link" href="https://www.youtube.com/watch?v=JTIRYHfQLaw" target="_blank">View Source →</a>
-    </div>
-  </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: State</span>
-      <span class="meta-chip issue">HQIM</span>
-      <span class="meta-chip date">May 6, 2026</span>
-      
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">New Jersey - State Level</div>
-    <div class="entry-content">
-      High-Quality Instructional Materials (02:35:05-02:36:08): State officials highlighted the IMPACT grant program supporting districts in researching and adopting evidence-based literacy curricula and instructional resources. Leaders emphasized that strong instructional materials are essential for successful literacy implementation and teacher effectiveness statewide. “Research indicates that high quality instructional materials are the key to this all,” said Director Kimberly Friedel.
-        <br/><a class="source-link" href="https://www.youtube.com/watch?v=XWDJaK0U6bQ" target="_blank">View Source →</a>
-    </div>
-  </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: District</span>
-      <span class="meta-chip issue">Math</span>
-      <span class="meta-chip date">May 6, 2026</span>
-      
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">NJ, MIDDLESEX BOROUGH SCHOOL DISTRICT</div>
-    <div class="entry-content">
-      Math Policy Updates: Public commenters raised concerns about district math performance and questioned whether staffing and budgeting decisions aligned with academic outcomes. One speaker noted that “one in three students” currently meets math standards and argued that the district should reconsider expensive personnel hires in light of those results. The discussion framed math achievement as a core accountability issue tied to financial decisions and staffing priorities rather than a formal curriculum policy update. Cheryl Torgerson stated, “As of today, we have one in three students meeting the math standards.” (Timestamp: 18:37–20:32).
-        <br/><a class="source-link" href="https://www.youtube.com/watch?v=9NXpyaa-Vh0" target="_blank">View Source →</a>
-    </div>
-  </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: State</span>
-      <span class="meta-chip issue">Reading</span>
-      <span class="meta-chip date">May 5, 2026</span>
-      
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">New Jersey - State Level</div>
-    <div class="entry-content">
-      Literacy Initiatives The board discussed implementation of statewide literacy reforms, including universal screening and evidence-based instruction, emphasizing early identification and intervention to improve outcomes. One official noted the urgency, stating, “we really need to have a sense of urgency… students not being able to read on grade level” (02:50:38). The meeting highlighted the importance of adopting high-quality instructional materials aligned to evidence-based literacy practices, supported by grant funding for districts. Officials emphasized that “if they don&#x27;t have those high quality materials… it may fall apart,” reinforcing materials as central to instructional success (02:35:05). (HQIM)  The board discussed implementing universal literacy screening statewide to identify student needs early and guide instruction. Screening is used diagnostically, not evaluatively, to inform Tier 1–3 supports. Policies require educator training in evidence-based literacy practices, data-driven interventions, and alignment with instructional materials to improve reading outcomes and close achievement gaps.
-        <br/><a class="source-link" href="https://www.youtube.com/watch?v=XWDJaK0U6bQ" target="_blank">View Source →</a>
-    </div>
-  </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: State</span>
-      <span class="meta-chip issue">Reading</span>
-      <span class="meta-chip date">May 6, 2026</span>
-      
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">New Jersey - State Level</div>
-    <div class="entry-content">
-      Literacy Initiatives (02:20:57-02:27:42): The board reviewed statewide implementation of universal literacy screening under new legislation requiring all schools to assess foundational reading skills early. Officials described evidence-based interventions, literacy coaching, professional development, and statewide supports intended to improve reading outcomes. “Research clearly shows that with high-quality evidence-based literacy instruction, up to 95% of students can achieve reading proficiency,” said Assistant Commissioner Jordan Schiff. Board members discussed how literacy screening data will guide tiered interventions through New Jersey’s multi-tiered systems of support framework. Officials explained that Tier 1 supports occur in classrooms, while Tier 3 involves intensive interventions tailored to individual student needs. “These decisions are made in real time by teachers,” explained Assistant Commissioner Jordan Schiff. “The passage of public law 2024, Chapter 52, established universal literacy screening as a requirement for all schools.&quot;
-        <br/><a class="source-link" href="https://www.youtube.com/watch?v=XWDJaK0U6bQ" target="_blank">View Source →</a>
-    </div>
-  </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: District</span>
-      <span class="meta-chip issue">Reading</span>
-      <span class="meta-chip date">May 6, 2026</span>
-      
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">NJ, MIDDLESEX BOROUGH SCHOOL DISTRICT</div>
-    <div class="entry-content">
-      Literacy Initiatives: During the budget presentation, district leaders highlighted early literacy as a strategic priority supported through external grant funding. Officials specifically referenced the NJDOE Lift and Coach Grants as tools to strengthen literacy instruction and improve student outcomes, particularly through preschool expansion and investments in early learning. Administrators stated the district was “strategically utilizing grant funding, such as the NJDOE Lift and Coach Grants, to enhance early literacy initiatives and boost student outcomes.” (Timestamp: 09:02–09:24).
-        <br/><a class="source-link" href="https://www.youtube.com/watch?v=9NXpyaa-Vh0" target="_blank">View Source →</a>
-    </div>
-  </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: State</span>
-      <span class="meta-chip issue">Standards</span>
-      <span class="meta-chip date">May 5, 2026</span>
-      
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">New Jersey - State Level</div>
-    <div class="entry-content">
-      Materials Adoption Preschool standards revisions require districts to adopt aligned curricula, reinforcing structured materials selection. Officials stated districts “are required to select a comprehensive curriculum… aligned to the preschool teaching and learning standards,” signaling a formalized approach to materials adoption tied to updated standards (03:08:03). (ECE)
-        <br/><a class="source-link" href="https://www.youtube.com/watch?v=XWDJaK0U6bQ" target="_blank">View Source →</a>
-    </div>
-  </div>
-    <div class="section-back-top"><a href="#page-top" class="back-to-top-link">↑ Back to top</a></div>
-  </div>
-
-  <div class="state-section" id="state-new-mexico">
-    <div class="state-header">
-      <span class="state-name">New Mexico</span>
-      <span class="state-abbrev">NM</span>
-      <span class="state-count">1 item</span>
-    </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: State</span>
-      <span class="meta-chip issue">Screen time</span>
-      <span class="meta-chip date">April 30, 2026</span>
-      
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">New Mexico - State Level</div>
-    <div class="entry-content">
-      Several parents and advocacy groups used the LESC public‑comment period to press the committee to study and limit classroom screen time and to scrutinize AI assessment tools being used with elementary students. Amanda Tupac, a parent of three Albuquerque children, asked the committee to consider not only funding amounts but the timeline districts face to implement special‑education plans and staffing: “That leaves everyone scrambling instead of being thoughtful,” she said, urging stability for students and staff. Multiple commenters described a specific classroom tool variously named during the hearing (Emera, Amira, AMIRA). Parents recounted instances of students hearing voice prompts and feeling uncomfortable; one parent said her child described the tool as “creepy.” Advocates asked for parental notification, explicit consent where student voice or facial data is recorded, and a moratorium on AI in elementary classrooms until studies and guardrails are in place.
-        <br/><a class="source-link" href="https://www.nmlegis.gov/Entity/LESC/Committee_Information" target="_blank">View Source →</a>
-    </div>
-  </div>
-    <div class="section-back-top"><a href="#page-top" class="back-to-top-link">↑ Back to top</a></div>
-  </div>
-
-  <div class="state-section" id="state-new-york">
-    <div class="state-header">
-      <span class="state-name">New York</span>
-      <span class="state-abbrev">NY</span>
-      <span class="state-count">2 items</span>
-    </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: State</span>
-      <span class="meta-chip issue">Budget</span>
-      <span class="meta-chip date">May 5, 2026</span>
-      <span class="badgood-tag badgood-2">➡ Flat</span>
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">NY, HYDE PARK CENTRAL SCHOOL DISTRICT</div>
-    <div class="entry-content">
-      <span class="why-matters">Hot Take: given the years of uncertainty, these delays from the State House are not helpful</span> Board updates on the state State budget. (01:47:19–01:47:32) The superintendent reports on ongoing state-level budget uncertainty, noting reliance on temporary budget extenders while key policy issues remain unresolved. This creates planning challenges for the district. “The New York State Legislature passed a seventh budget extender” (Speaker)
-        <br/><a class="source-link" href="https://www.youtube.com/watch?v=HrZSRjezChg" target="_blank">View Source →</a>
-    </div>
-  </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: District</span>
-      <span class="meta-chip issue">Screen time</span>
-      <span class="meta-chip date">May 5, 2026</span>
-      
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">NY, HYDE PARK CENTRAL SCHOOL DISTRICT</div>
-    <div class="entry-content">
-      Screen Time / Education Technology Concerns (02:42:49–02:51:08) Technology leaders explicitly address concerns about excessive student screen time, noting the need to evaluate both quantity and purpose of device use. Plans include new monitoring tools and analysis by grade level. “It’s not necessarily the amount of screen time, it’s the purpose” (Speaker).
-        <br/><a class="source-link" href="https://www.youtube.com/watch?v=HrZSRjezChg" target="_blank">View Source →</a>
-    </div>
-  </div>
-    <div class="section-back-top"><a href="#page-top" class="back-to-top-link">↑ Back to top</a></div>
-  </div>
-
-  <div class="state-section" id="state-north-carolina">
-    <div class="state-header">
-      <span class="state-name">North Carolina</span>
-      <span class="state-abbrev">NC</span>
-      <span class="state-count">1 item</span>
-    </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: District</span>
-      <span class="meta-chip issue">Screen Time</span>
-      <span class="meta-chip date">April 30, 2026</span>
-      
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">NC, WAKE COUNTY SCHOOLS</div>
-    <div class="entry-content">
-      <span class="why-matters">Hot Take: another example of local concerns about screen time and the right &quot;balance.&quot;</span> Education Technology Concerns 01:21:12–01:26:09 The board engaged in a detailed discussion about reducing reliance on student devices, particularly in elementary grades, and reallocating technology funding to higher-priority needs. Staff explained that $5 million was cut from device spending due to completed projects (e.g., Promethean boards) and a pending long-term device strategy. Leaders emphasized that “we’re not in a COVID setting” and should move away from sending devices home, instead prioritizing classroom-based access and instructional balance. The conversation also highlighted broader concerns about screen time, instructional quality, and developmental appropriateness. Board members raised the idea of returning to more traditional models like shared classroom sets or dedicated technology labs, which promote movement and social interaction. Staff acknowledged a “national debate about screen time” and noted that rising device costs and evolving technology needs (e.g., AI infrastructure) are influencing planning decisions.
-        <br/><a class="source-link" href="https://youtu.be/mt91zDGM_qw" target="_blank">View Source →</a>
-    </div>
-  </div>
-    <div class="section-back-top"><a href="#page-top" class="back-to-top-link">↑ Back to top</a></div>
-  </div>
-
-  <div class="state-section" id="state-ohio">
-    <div class="state-header">
-      <span class="state-name">Ohio</span>
-      <span class="state-abbrev">OH</span>
-      <span class="state-count">1 item</span>
-    </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: State</span>
-      <span class="meta-chip issue">School Choice</span>
-      <span class="meta-chip date">May 1, 2026</span>
-      
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">Ohio - State Level</div>
-    <div class="entry-content">
-      Nearly $100 million in Grant Funding Now Available to Expand Community School Access in Ohio: Ohio will offer $50 million through the Charter Schools Program Grant and $47.5 million through the Charter School Facilities Incentive Grant. Funding will support new and expanded high-quality community schools, facilities costs, workforce readiness opportunities, and access in rural, economically disadvantaged, and grades 9-12 settings.
-        <br/><a class="source-link" href="https://education.ohio.gov/Media/Media-Releases/2026-Media-Releases/Nearly-%24100-million%C2%A0in-Grant-Funding-Now-Available" target="_blank">View Source →</a>
-    </div>
-  </div>
-    <div class="section-back-top"><a href="#page-top" class="back-to-top-link">↑ Back to top</a></div>
-  </div>
-
-  <div class="state-section" id="state-oklahoma">
-    <div class="state-header">
-      <span class="state-name">Oklahoma</span>
-      <span class="state-abbrev">OK</span>
-      <span class="state-count">1 item</span>
-    </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: District</span>
-      <span class="meta-chip issue">Screen time</span>
-      <span class="meta-chip date">May 5, 2026</span>
-      
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">OK, SAND SPRINGS</div>
-    <div class="entry-content">
-      <span class="why-matters">Hot Take: Sand Springs appears to be leading a productive conversation about screen time that includes parental input.</span> Education Technology / Screen Time Concerns Expanded (30:27–34:26): The board engaged in a nuanced discussion that goes beyond simple “too much screen time” concerns and instead reflects a broader instructional shift underway in the district. Leaders acknowledged that during COVID, rapid adoption of 1:1 devices was necessary, but they now see unintended academic and developmental consequences—particularly around reduced student interaction and weakened critical thinking skills. “When it comes to social interaction… that’s where I feel like we’re starting to lose the kids when they cannot have a conversation with an adult” (Board Member). The issue is being addressed through community engagement and stakeholder input. The conversation originated in a “Coffee with Cabinet” session with parents and community members, signaling that this is not just an internal instructional adjustment but a response to broader community concern. Overall, the district is positioning itself in a transitional phase—moving from emergency-driven technology adoption toward a more intentional, balanced instructional model that prioritizes human interaction, writing, and critical thinking alongside digital tools.
-        <br/><a class="source-link" href="https://youtu.be/6y1JfuJNWII" target="_blank">View Source →</a>
-    </div>
-  </div>
-    <div class="section-back-top"><a href="#page-top" class="back-to-top-link">↑ Back to top</a></div>
-  </div>
-
-  <div class="state-section" id="state-oregon">
-    <div class="state-header">
-      <span class="state-name">Oregon</span>
-      <span class="state-abbrev">OR</span>
-      <span class="state-count">1 item</span>
-    </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: District</span>
-      <span class="meta-chip issue">Budget</span>
-      <span class="meta-chip date">May 1, 2026</span>
-      <span class="badgood-tag badgood-1">📉 Declining</span>
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">OR, PORTLAND SD 1J</div>
-    <div class="entry-content">
-      Another year of cuts: Portland Public Schools presents $2.77 billion budget: Superintendent Kimberlee Armstrong presented a $2.77 billion budget addressing a $56 million gap through elimination of 336 full-time positions including 112 school-based staff, 101 specialized program positions, 74 central office roles, and 48 transportation and facilities workers. The district has cut $115.5 million since 2023-24 due to declining enrollment and rising PERS costs from 4% to 20%, with projections showing another $65.2 million reduction needed for 2027-28. Changes include blended elementary classrooms, increased student-teacher ratios, and reduced electives, while Gov. Kotek recently banned furlough days as a cost-saving measure.
-        <br/><a class="source-link" href="https://www.opb.org/article/2026/04/29/portland-public-schools-budget-gap-deep-cuts/?utm_source=wwr.whiteboardadvisors.com&amp;utm_medium=newsletter&amp;utm_campaign=what-we-re-reading-april-29-2026&amp;_bhlid=84f4d07cfb4093e4b1da4cb5d2402d9eb7545a01" target="_blank">View Source →</a>
-    </div>
-  </div>
-    <div class="section-back-top"><a href="#page-top" class="back-to-top-link">↑ Back to top</a></div>
-  </div>
-
-  <div class="state-section" id="state-pennsylvania">
-    <div class="state-header">
-      <span class="state-name">Pennsylvania</span>
-      <span class="state-abbrev">PA</span>
-      <span class="state-count">3 items</span>
-    </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: District</span>
-      <span class="meta-chip issue">Budget</span>
-      <span class="meta-chip date">May 5, 2026</span>
-      <span class="badgood-tag badgood-2">➡ Flat</span>
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">PA, PALMYRA AREA SD</div>
-    <div class="entry-content">
-      <span class="why-matters">Hot Take: Here&#x27;s an important conversation about how districts are setting aside a certain percentage of funds in case things go sideways again. There&#x27;s some good news there. At some point, they have to release this, because there&#x27;s no way they&#x27;re gonna return it</span> District leaders highlight uncertainty in federal aid, noting they conservatively budget for only about 75% of expected grant funding to hedge against delays or cuts. This precaution protects operations if funding falls short. “We were told to budget 75% for each grant…that is embedded in the budget” (00:25:38, Administrator Toscano).
-        <br/><a class="source-link" href="https://www.pasd.us/Board-of-Directors" target="_blank">View Source →</a>
-    </div>
-  </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: District</span>
-      <span class="meta-chip issue">Budget</span>
-      <span class="meta-chip date">May 5, 2026</span>
-      <span class="badgood-tag badgood-3">📈 Improving</span>
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">PA, CENTRAL YORK SD</div>
-    <div class="entry-content">
-      District Budget Forecast (23:19–39:05) The district presented a detailed multi-year financial outlook, emphasizing both near-term stability and long-term pressure points. For the current year, the district projects a $6.2 million surplus and an ending fund balance of approximately $18.8 million, reflecting recovery from prior deficit years. However, officials cautioned that this improved position is partly cyclical and may not persist without continued revenue growth. A key theme in the forecast is structural cost growth outpacing predictable revenue increases. Major drivers include rising pension obligations (despite a slight rate decrease, total costs still rise due to salary growth), healthcare increases (~3.5%), and expanding cyber charter tuition costs, which have nearly doubled from about $2 million to a projected $3.8 million over several years. In its five-year projection, the district expects to remain in surplus each year, but those surpluses steadily shrink, dropping to roughly $280,000 by the end of the projection period.
-        <br/><a class="source-link" href="https://youtu.be/-hjmFdHCtr8" target="_blank">View Source →</a>
-    </div>
-  </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: State</span>
-      <span class="meta-chip issue">Budget</span>
-      <span class="meta-chip date">May 5, 2026</span>
-      <span class="badgood-tag badgood-2">➡ Flat</span>
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">Pennsylvania - State Level</div>
-    <div class="entry-content">
-      <span class="why-matters">Hot Take: Pennsylvania is again dragging its feet on the state budget. The not-great quote from the school board meeting is &quot;We&#x27;ll find out in July.&quot;</span> State Budget (44:23–45:57) The discussion clarified that Pennsylvania’s state budget had not yet been finalized, forcing the district to conservatively estimate revenues. Administrators explained they only budgeted partial funding for certain aid categories due to uncertainty, noting “because the state budget hasn’t passed yet…we budgeted for half” of anticipated adequacy funding (Spitero). This reflects a common district practice to avoid overestimating revenues tied to legislative approval. The conversation also highlighted that the governor’s proposal separates “foundation” funding (more predictable) from “adequacy” funding (less certain until passage), creating variability in projections. Board members expressed concern about whether final allocations would at least match prior-year funding levels, underscoring reliance on state decisions for key areas like special education, transportation, and Ready to Learn grants. Officials indicated clarity would not come until summer, stating “we’ll find out in July” (Spitero), reinforcing that final district budget assumptions hinge on state legislative action and revenue decisions such as gaming or marijuana taxes.
-        <br/><a class="source-link" href="https://youtu.be/-hjmFdHCtr8" target="_blank">View Source →</a>
-    </div>
-  </div>
-    <div class="section-back-top"><a href="#page-top" class="back-to-top-link">↑ Back to top</a></div>
-  </div>
-
-  <div class="state-section" id="state-rhode-island">
-    <div class="state-header">
-      <span class="state-name">Rhode Island</span>
-      <span class="state-abbrev">RI</span>
-      <span class="state-count">2 items</span>
-    </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: State</span>
-      <span class="meta-chip issue">Absenteeism</span>
-      <span class="meta-chip date">May 5, 2026</span>
-      
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">Rhode Island - State Level</div>
-    <div class="entry-content">
-      Absenteeism Chronic absenteeism is treated as a central statewide priority, with leadership explicitly linking it to student outcomes and system performance. The commissioner emphasized that “attendance is one of our major challenges…reducing our chronic absenteeism” (Speaker: Commissioner Infante Green, 00:01:19), underscoring its role as a predictor of academic success and long-term achievement. The state has implemented incentive-based strategies to improve attendance, including partnerships with external organizations. A notable initiative is the Rhode Island FC attendance challenge, where “the five best improved schools…will be able to participate” in rewards-based events (Speaker: Commissioner Infante Green, 00:02:09), designed to re-engage students, particularly late in the school year.
-        <br/><a class="source-link" href="https://ride.ri.gov/board-education/meeting-schedule-agendas-minutes" target="_blank">View Source →</a>
-    </div>
-  </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: State</span>
-      <span class="meta-chip issue">Math</span>
-      <span class="meta-chip date">May 5, 2026</span>
-      
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">Rhode Island - State Level</div>
-    <div class="entry-content">
-      Math Policy Updates The council reviewed and endorsed continued use of Rhode Island’s Math standards without revision, emphasizing stability and alignment to improved outcomes. Officials highlighted that “there are no recommended changes at this time…staying the course is going to benefit Rhode Island students” (Speaker: Rima, 00:18:34). Officials emphasized that standards function as a baseline while instruction depends on strong curriculum materials, stating teachers “should use their high-quality curriculum materials to guide…how they’re helping students meet their standards” (Speaker: Rima, 00:15:12). This reinforces HQIM as central to implementation fidelity.
-        <br/><a class="source-link" href="https://ride.ri.gov/board-education/meeting-schedule-agendas-minutes" target="_blank">View Source →</a>
-    </div>
-  </div>
-    <div class="section-back-top"><a href="#page-top" class="back-to-top-link">↑ Back to top</a></div>
-  </div>
-
-  <div class="state-section" id="state-tennessee">
-    <div class="state-header">
-      <span class="state-name">Tennessee</span>
-      <span class="state-abbrev">TN</span>
-      <span class="state-count">1 item</span>
-    </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: State</span>
-      <span class="meta-chip issue">Finance</span>
-      <span class="meta-chip date">May 5, 2026</span>
-      <span class="badgood-tag badgood-1">📉 Declining</span>
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">Tennessee - State Level</div>
-    <div class="entry-content">
-      Tennessee falls to 51st in education spending as voucher debate deepens divide: Tennessee ranks last nationally in per-pupil K-12 spending, according to the National Education Association’s 2026 Rankings and Estimates Report. Democratic lawmakers link the ranking to underinvestment and the state’s expanding voucher program, while Republican supporters argue per-pupil spending is an incomplete measure and say 35,000 scholarships will expand family choice.
-        <br/><a class="source-link" href="https://www.wkrn.com/news/tennessee-news/tennessee-falls-to-51st-in-education-spending-as-voucher-debate-deepens-divide/" target="_blank">View Source →</a>
-    </div>
-  </div>
-    <div class="section-back-top"><a href="#page-top" class="back-to-top-link">↑ Back to top</a></div>
-  </div>
-
-  <div class="state-section" id="state-us">
-    <div class="state-header">
-      <span class="state-name">US</span>
-      <span class="state-abbrev">US</span>
-      <span class="state-count">1 item</span>
-    </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: National</span>
-      <span class="meta-chip issue">EdTech</span>
-      <span class="meta-chip date">May 3, 2026</span>
-      
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">US - National</div>
-    <div class="entry-content">
-      <span class="why-matters">I’ve argued that the bans merely give teachers and school administrators a pause—some small breathing room—from patrolling adolescents&#x27; social media activity as they forge personal identities and social cliques. The bans do nothing on their own (other than save data rates), and hopes of rising test scores are nothing but Hail Mary material.</span> Schools that locked up student smartphones during the day cut in-class phone use by roughly 80%, yet saw near-zero average gains in standardized test scores. High schools and middle schools are trending in opposite directions. A working paper from the National Bureau of Economic Research examined nearly 1,800 schools using Yondr lockable pouches, drawing on GPS pings, state test records, disciplinary data, and student surveys across multiple years. The study found that phone activity during school hours dropped by approximately 30% as measured by GPS data in the third year after adoption, and teacher-reported personal phone use in class fell from 61% of students to 13%. Despite that reduction in scale, overall test score effects were statistically indistinguishable across math and English language arts combined.
-        <br/><a class="source-link" href="https://tom-dee.github.io/files/w35132.pdf" target="_blank">View Source →</a>
-    </div>
-  </div>
-    <div class="section-back-top"><a href="#page-top" class="back-to-top-link">↑ Back to top</a></div>
-  </div>
-
-  <div class="state-section" id="state-vermont">
-    <div class="state-header">
-      <span class="state-name">Vermont</span>
-      <span class="state-abbrev">VT</span>
-      <span class="state-count">2 items</span>
-    </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: State</span>
-      <span class="meta-chip issue">Finance</span>
-      <span class="meta-chip date">May 4, 2026</span>
-      <span class="badgood-tag badgood-3">📈 Improving</span>
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">Vermont - State Level</div>
-    <div class="entry-content">
-      Feds release education funds owed to Vermont school districts: The U.S. Department of Education released $11.58 million in delayed pandemic-era K-12 funds to 20 Vermont school districts, the Vermont Agency of Education and one mental health provider. The money will reimburse summer and after-school programs, renovations, teacher training, literacy and math coaches, and mental health supports.
-        <br/><a class="source-link" href="https://vtdigger.org/2026/05/02/feds-release-education-funds-owed-to-vermont-school-districts/" target="_blank">View Source →</a>
-    </div>
-  </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: State</span>
-      <span class="meta-chip issue">Mental Health</span>
-      <span class="meta-chip date">May 4, 2026</span>
-      
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">Vermont - State Level</div>
-    <div class="entry-content">
-      <span class="why-matters">Hot Take: It&#x27;s sooo late that this may feel like new (surprise) funding.</span> Federal government releases $11.58 million in K-12 funding delayed from pandemic era to 20 Vermont districts. Burlington School District receives largest amount at $3.9 million. Burlington School District: $3,884,414 Caledonia Central Supervisory Union: $149,375 Central Vermont Career Center School: $70,605 Central Vermont Supervisory Union: $287,677 Essex North Supervisory Union: $81,777 Franklin Northeast Supervisory Union: $1,220 Hartford Town School District: $32,410
-        <br/><a class="source-link" href="https://vtdigger.org/2026/05/02/feds-release-education-funds-owed-to-vermont-school-districts/" target="_blank">View Source →</a>
-    </div>
-  </div>
-    <div class="section-back-top"><a href="#page-top" class="back-to-top-link">↑ Back to top</a></div>
-  </div>
-
-  <div class="state-section" id="state-washington">
-    <div class="state-header">
-      <span class="state-name">Washington</span>
-      <span class="state-abbrev">WA</span>
-      <span class="state-count">1 item</span>
-    </div>
-
-  <div class="entry-card score3">
-    <div class="entry-meta">
-      <span class="meta-chip level">Level: District</span>
-      <span class="meta-chip issue">Reading</span>
-      <span class="meta-chip date">May 4, 2026</span>
-      
-      <div class="actionable-score"><span class="score3-tag">🔥 Action Score: 3</span></div>
-    </div>
-    <div class="district-badge">WA, SEATTLE SCHOOL DISTRICT NO. 1</div>
-    <div class="entry-content">
-      Seattle Schools adopts new reading curriculum for K-5 students: Seattle Public Schools approved McGraw Hill’s Emerge Elementary School Curriculum for K-5 English language arts, aligning core materials with the science of reading for the first time. The $5.8 million adoption runs through 2032-33, includes teacher training through 2028-29 and comes as Washington requires research-aligned K-4 reading curricula.
-        <br/><a class="source-link" href="https://www.seattletimes.com/education-lab/seattle-schools-adopts-new-reading-curriculum-for-k-5-students/" target="_blank">View Source →</a>
-    </div>
-  </div>
-    <div class="section-back-top"><a href="#page-top" class="back-to-top-link">↑ Back to top</a></div>
-  </div>
-  <!-- UPDATES:END -->
-
-  <footer class="memo-footer">
-    <span class="footer-brand">Whiteboard Advisors</span>
-    <span>Privileged &amp; Confidential</span>
-    <span style="display:flex;align-items:center;gap:14px;text-transform:none;letter-spacing:0;">
-      <button type="button" class="contact-inline" data-open-contact>Email David</button>
-      <span style="margin-top:4px;">April 27, 2026 · Confidential</span>
-    </span>
-  </footer>
-
-</main>
-
-<!-- ════════════════════════════════════════════════════════════════════════
-     ASK DAVID — floating contact button + modal
-══════════════════════════════════════════════════════════════════════════════ -->
-<button class="contact-fab" id="contact-fab" type="button"
-        title="Send David a question or request" aria-label="Send David a question or request">
-  <span class="fab-icon" aria-hidden="true">✉</span>
-  <span>Ask David</span>
-</button>
-
-<div class="contact-modal" id="contact-modal" role="dialog" aria-modal="true"
-     aria-labelledby="contact-modal-title" hidden>
-  <div class="contact-modal-backdrop" data-close></div>
-  <div class="contact-modal-card" role="document">
-    <header class="contact-modal-header">
-      <div>
-        <h2 id="contact-modal-title">Send David a note</h2>
-        <p>david@whiteboardadvisors.com</p>
-      </div>
-      <button class="contact-close" type="button" data-close aria-label="Close dialog">✕</button>
-    </header>
-    <form class="contact-form" id="contact-form" novalidate>
-      <label class="contact-field">
-        <span class="contact-label">Subject</span>
-        <input type="text" id="contact-subject" name="subject"
-               value="W/A Topline — " required maxlength="180" autocomplete="off">
-      </label>
-      <label class="contact-field">
-        <span class="contact-label">Your message</span>
-        <textarea id="contact-message" name="message" rows="5"
-                  placeholder="Hi David — I wanted to ask about…" required></textarea>
-      </label>
-      <label class="contact-checkbox">
-        <input type="checkbox" id="contact-include-context" checked>
-        <span>Append report context (period &amp; current filter view) to the message</span>
-      </label>
-      <div class="contact-actions">
-        <button type="button" class="contact-btn-secondary" id="contact-copy">
-          📋 Copy to Clipboard
-        </button>
-        <button type="submit" class="contact-btn-primary">
-          ✉ Open in Email →
-        </button>
-      </div>
-      <div class="contact-status" id="contact-status" aria-live="polite"></div>
-    </form>
-  </div>
-</div>
-
-<button class="back-to-top" id="backToTop" title="Back to top">↑</button>
-
-<script>
-/* PYTHON:BEGIN_SCRIPT_CONFIG */
-const MEMO_CONFIG = {
-  latestItemDate:   "2026-05-06",
-  reportingWindow:  "Rolling 7 days · latest item: May 6, 2026",
-  totalRowsRead:    4250,
-  qualifyingRows:   51,
-  dataSource:       "Whiteboard Advisors Review and Analysis",
+      <span class="state-name">{escape(state)}</span>
+      <span class="state-abbrev">{escape(abbrev)}</span>
+      <span class="state-count">{count} {items_label}</span>
+    </div>
+
+{cards}
+  </div>"""
+
+
+def build_updates_html(updates):
+    if not updates:
+        return """\
+  <div class="entry-card cool">
+    <div class="entry-content" style="text-align:center;padding:32px;color:var(--text-muted);">
+      No qualifying items found in the last 7 days.
+    </div>
+  </div>"""
+
+    sections = []
+    for state, records in group_by_state(updates):
+        sections.append(build_state_section(state, records))
+    return "\n\n".join(sections)
+
+
+# ── STEP 4: INJECT INTO index.html ────────────────────────────────────────────
+def inject_updates(html, updates_html):
+    """Replace content between MARKER_BEGIN and MARKER_END. Idempotent."""
+    pattern = re.compile(
+        re.escape(MARKER_BEGIN) + r".*?" + re.escape(MARKER_END),
+        re.DOTALL
+    )
+    if not pattern.search(html):
+        print(f"ERROR: Markers not found in index.html.\n"
+              f"  Expected: {MARKER_BEGIN!r} ... {MARKER_END!r}")
+        sys.exit(1)
+
+    replacement = f"{MARKER_BEGIN}\n{updates_html}\n  {MARKER_END}"
+    return pattern.sub(replacement, html)
+
+
+def update_panel_marker(html, marker_key, new_inner_html):
+    """Replace content between <!-- PYTHON:{KEY} --> and <!-- PYTHON:END_{KEY} -->."""
+    begin = f"<!-- PYTHON:{marker_key} -->"
+    end   = f"<!-- PYTHON:END_{marker_key} -->"
+    pattern = re.compile(
+        re.escape(begin) + r".*?" + re.escape(end),
+        re.DOTALL
+    )
+    if not pattern.search(html):
+        return html  # marker absent — skip silently
+    replacement = f"{begin}\n      {new_inner_html}\n      {end}"
+    return pattern.sub(replacement, html)
+
+
+def update_inline_marker(html, marker_key, new_inner_html):
+    """
+    Replace content between <!-- PYTHON:{KEY} --> and <!-- PYTHON:END_{KEY} -->
+    WITHOUT inserting newlines or indentation. Use for markers that sit inline
+    inside a <span> or other inline element (e.g. the header date pill).
+    """
+    begin = f"<!-- PYTHON:{marker_key} -->"
+    end   = f"<!-- PYTHON:END_{marker_key} -->"
+    pattern = re.compile(
+        re.escape(begin) + r".*?" + re.escape(end),
+        re.DOTALL
+    )
+    if not pattern.search(html):
+        return html  # marker absent — skip silently
+    replacement = f"{begin}{new_inner_html}{end}"
+    return pattern.sub(replacement, html)
+
+
+def update_script_config(html, latest_item_date, window_str, total, qualifying, source):
+    """Update the JS MEMO_CONFIG block between PYTHON:BEGIN_SCRIPT_CONFIG markers."""
+    config_block = f"""/* PYTHON:BEGIN_SCRIPT_CONFIG */
+const MEMO_CONFIG = {{
+  latestItemDate:   "{latest_item_date}",
+  reportingWindow:  "{window_str}",
+  totalRowsRead:    {total},
+  qualifyingRows:   {qualifying},
+  dataSource:       "{escape(source)}",
   generationMethod: "auto",
-};
-/* PYTHON:END_SCRIPT_CONFIG */
+}};
+/* PYTHON:END_SCRIPT_CONFIG */"""
 
-/* ── Video Overview CONFIG ─────────────────────── */
-const WEEKLY_VIDEO = {
-  // Wistia media ID for the Video Overview
-  wistiaId:    "9ajjofduyg",
-  // Embed iframe URL (autoplay disabled by default)
-  embedUrl:    "https://fast.wistia.net/embed/iframe/9ajjofduyg?seo=true&videoFoam=true",
-  // Public link for new-window pop-out
-  popoutUrl:   "https://whiteboardadvisors.wistia.com/medias/9ajjofduyg",
-  popoutW:     960,
-  popoutH:     600,
-};
+    pattern = re.compile(
+        r"/\* PYTHON:BEGIN_SCRIPT_CONFIG \*/.*?/\* PYTHON:END_SCRIPT_CONFIG \*/",
+        re.DOTALL
+    )
+    if pattern.search(html):
+        html = pattern.sub(config_block, html)
+    return html
 
-document.addEventListener("DOMContentLoaded", () => {
-  document.title = `W/A Topline Intelligence — ${MEMO_CONFIG.latestItemDate}`;
 
-  // ── Back-to-top button ─────────────────────────────────
-  const btn = document.getElementById('backToTop');
-  window.addEventListener('scroll', () => {
-    btn.classList.toggle('visible', window.scrollY > 600);
-  });
-  btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+def update_static_dates(html, latest_display, cutoff_display, qualifying, hot_count, state_count):
+    """
+    Update the hardcoded dates and stats in the memo header, intro, footer,
+    and stats bar so they always reflect the current run window.
+    """
+    # ── Stats bar numbers ──────────────────────────────────────────────────────
+    # Total actionable items
+    html = re.sub(
+        r'(<div class="stat-number total">)\d+(</div>)',
+        rf'\g<1>{qualifying}\2', html
+    )
+    # High-Heat (Cold-Hot == 3)
+    html = re.sub(
+        r'(<div class="stat-number hot">)\d+(</div>)',
+        rf'\g<1>{hot_count}\2', html
+    )
+    # States represented
+    html = re.sub(
+        r'(<div class="stat-number states">)\d+(</div>)',
+        rf'\g<1>{state_count}\2', html
+    )
+    # Days covered (always 7)
+    html = re.sub(
+        r'(<div class="stat-number"[^>]*>)\d+(</div>\s*<div class="stat-label">Days Covered)',
+        rf'\g<1>7\2', html
+    )
 
-  // Section back-to-top links
-  document.querySelectorAll('.back-to-top-link').forEach(link => {
-    link.addEventListener('click', (e) => {
-      e.preventDefault();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-  });
+    # ── Memo header date fields ────────────────────────────────────────────────
+    # "Date" field in meta grid
+    html = re.sub(
+        r'(<span class="label">Date</span>\s*<span class="val">)[^<]*(</span>)',
+        rf'\g<1>{latest_display}\2', html
+    )
+    # "Re" field
+    html = re.sub(
+        r'(<span class="label">Re</span>\s*<span class="val">)[^<]*(</span>)',
+        rf'\g<1>Actionable Education Policy Developments — {cutoff_display} – {latest_display}\2',
+        html
+    )
+    # "Source" field — update window reference
+    html = re.sub(
+        r'(<span class="label">Source</span>\s*<span class="val">)[^<]*(</span>)',
+        rf'\g<1>Google Sheets (live) — Bad-Good Score: 3 | Rolling 7-Day Window\2',
+        html
+    )
+    # Date badge top-right
+    html = re.sub(
+        r'(<div class="memo-date-badge">)[^<]*(</div>)',
+        rf'\g<1>{latest_display}\2', html
+    )
 
-  // ── Status badge ───────────────────────────────────────
-  const statusEl = document.querySelector(".auto-status");
-  if (statusEl) {
-    if (MEMO_CONFIG.generationMethod === "auto") {
-      statusEl.classList.remove("manual", "pending");
-      statusEl.classList.add("active");
-      statusEl.innerHTML = `<span class="auto-dot"></span> Daily Updates Active`;
-    } else {
-      statusEl.classList.remove("active", "pending");
-      statusEl.classList.add("manual");
-      statusEl.innerHTML = `<span class="auto-dot"></span> Manual Mode`;
+    # ── Intro paragraph dates ──────────────────────────────────────────────────
+    html = re.sub(
+        r'(from the period <strong>)[^<]*(</strong>)',
+        rf'\g<1>{cutoff_display} – {latest_display}\2', html
+    )
+
+    # ── Footer date ────────────────────────────────────────────────────────────
+    html = re.sub(
+        r'(<div style="margin-top:4px;">)[^<]*(· Confidential</div>)',
+        rf'\g<1>{latest_display} · Confidential\2', html
+    )
+
+    return html
+
+
+def main():
+    print("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    print("  HMH Market Intelligence — update_from_sheets.py")
+    print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
+
+    # --- Fetch
+    print("[1] Fetching from Google Sheets...")
+    records = fetch_records()
+    total   = len(records)
+
+    # --- Filter
+    print(f"\n[2] Filtering (last {DAYS_WINDOW} days, {SCORE_COL}={SCORE_THRESHOLD})...")
+    updates = filter_records(records)
+
+    # --- Compute display values from qualifying records
+    if updates:
+        latest_dt        = max(r["_date_obj"] for r in updates)
+        cutoff_dt        = min(r["_date_obj"] for r in updates)
+        latest_item_str  = latest_dt.strftime("%Y-%m-%d")
+        latest_display   = latest_dt.strftime("%B %-d, %Y")
+        cutoff_display   = cutoff_dt.strftime("%B %-d, %Y")
+    else:
+        now              = datetime.datetime.utcnow()
+        latest_item_str  = now.strftime("%Y-%m-%d")
+        latest_display   = now.strftime("%B %-d, %Y")
+        cutoff_display   = (now - datetime.timedelta(days=DAYS_WINDOW)).strftime("%B %-d, %Y")
+
+    # Counts for stats bar
+    hot_count   = sum(1 for r in updates if int(r.get(ACTION_COL, 0) or 0) == HOT_THRESHOLD)
+    state_count = len({safe(r.get(STATE_COL)) for r in updates})
+
+    window_str  = f"Rolling 7 days · latest item: {latest_display}"
+    rows_str    = f"{total} total → {len(updates)} qualifying"
+    source_str  = "W/A's Daily Review"
+
+    # --- Build HTML
+    print("\n[3] Building entry cards...")
+    updates_html = build_updates_html(updates)
+    print(f"  ✓ {len(updates)} cards | {hot_count} high-heat | {state_count} states | latest: {latest_display}")
+
+    # --- Read index.html
+    print(f"\n[4] Reading {INDEX_HTML}...")
+    if not INDEX_HTML.exists():
+        print(f"ERROR: index.html not found at {INDEX_HTML}")
+        sys.exit(1)
+    html = INDEX_HTML.read_text(encoding="utf-8")
+
+    # --- Inject updates
+    print("\n[5] Injecting updates...")
+    html = inject_updates(html, updates_html)
+
+    # --- Update static dates and stats bar
+    print("\n[6] Updating header dates and stats bar...")
+    html = update_static_dates(
+        html, latest_display, cutoff_display,
+        len(updates), hot_count, state_count
+    )
+
+    # --- Update automation panel markers
+    print("\n[7] Updating automation panel markers...")
+    panel_values = {
+        "LAST_GENERATED":    PANEL_MARKERS["LAST_GENERATED"](latest_display),
+        "DATA_SOURCE":       PANEL_MARKERS["DATA_SOURCE"](source_str),
+        "DATE_WINDOW":       PANEL_MARKERS["DATE_WINDOW"](window_str),
+        "ROW_COUNT":         PANEL_MARKERS["ROW_COUNT"](rows_str),
+        "GENERATION_METHOD": PANEL_MARKERS["GENERATION_METHOD"](None),
     }
-  }
+    for key, value in panel_values.items():
+        html = update_panel_marker(html, key, value)
 
-  // ════════════════════════════════════════════════════════════════════════
-  // UNIFIED FILTER SYSTEM (state + issue, AND-logic)
-  // Adapted from index-amplify.html — selects topline's .meta-chip.issue
-  // ════════════════════════════════════════════════════════════════════════
-  (function UnifiedFilterSystem() {
-    const allCards    = Array.from(document.querySelectorAll('.entry-card'));
-    const allSections = Array.from(document.querySelectorAll('.state-section'));
-    const tocChips    = Array.from(document.querySelectorAll('.toc-chip'));
-    const filterBar   = document.getElementById('issue-filter-bar');
-    const filterInner = filterBar ? filterBar.querySelector('.issue-filter-inner') : null;
-    const statusBar   = document.getElementById('filter-status-bar');
-    const statusInner = document.getElementById('filter-status-inner');
-    const clearAllBtn = document.getElementById('filter-clear-all');
-    const toggleBtn   = document.getElementById('filter-toggle-btn');
-    const navClearBtn = document.getElementById('nav-clear-btn');
+    # --- Update inline header date markers (date-tag pill + overview eyebrow)
+    # These sit INLINE inside <span> elements, so they need the no-newline writer.
+    # The visible string format is e.g. "April 22, 2026 – April 27, 2026"
+    # using an EN-DASH (U+2013) to match the existing typography.
+    date_range_str = f"{cutoff_display} \u2013 {latest_display}"
+    html = update_inline_marker(html, "HEADER_DATE_RANGE", date_range_str)
+    html = update_inline_marker(html, "OVERVIEW_PERIOD",   date_range_str)
 
-    if (!filterInner || allCards.length === 0) return;
+    html = update_script_config(
+        html, latest_item_str, window_str, total, len(updates), source_str
+    )
 
-    let activeState = null;
-    let activeIssue = null;
+    # --- Write
+    print(f"\n[8] Writing {INDEX_HTML}...")
+    INDEX_HTML.write_text(html, encoding="utf-8")
+    print(f"  ✓ Successfully updated index.html")
 
-    // ── Index cards ────────────────────────────────────────
-    const cardMeta      = new Map();
-    const stateToIssues = {};
+    print("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    print(f"  Done — {len(updates)} entries | latest item: {latest_display}")
+    print(f"  High-heat: {hot_count} | States: {state_count}")
+    print(f"  Window: {cutoff_display} → {latest_display} (rolling {DAYS_WINDOW} days)")
+    print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
+    print("  ✓ Commit and push index.html to trigger Netlify deploy:")
+    print(f"    git add index.html")
+    print(f"    git commit -m 'HMH update — latest item {latest_item_str}'")
+    print( "    git push origin main\n")
 
-    allCards.forEach(card => {
-      const section = card.closest('.state-section');
-      const rawId   = section ? section.id : null;
-      const stateId = rawId ? rawId.replace(/^state-/, '') : null;
-      // topline cards use <span class="meta-chip issue">…</span>
-      const issueEl = card.querySelector('.meta-chip.issue');
-      const issue   = issueEl ? issueEl.textContent.trim() : null;
-      cardMeta.set(card, { stateId, issue });
-      if (stateId && issue) {
-        if (!stateToIssues[stateId]) stateToIssues[stateId] = new Set();
-        stateToIssues[stateId].add(issue);
-      }
-    });
 
-    // ── Build issue chips dynamically, sorted by frequency ──
-    const globalIssueCounts = {};
-    allCards.forEach(card => {
-      const { issue } = cardMeta.get(card);
-      if (issue) globalIssueCounts[issue] = (globalIssueCounts[issue] || 0) + 1;
-    });
-    const sortedIssues = Object.keys(globalIssueCounts)
-      .sort((a, b) => globalIssueCounts[b] - globalIssueCounts[a]);
-
-    if (sortedIssues.length === 0) return;
-
-    const allIssueChip = filterInner.querySelector('.all-chip');
-    sortedIssues.forEach(issue => {
-      const chip = document.createElement('span');
-      chip.className = 'issue-chip';
-      chip.dataset.issue = issue;
-      chip.textContent = `${issue} (${globalIssueCounts[issue]})`;
-      filterInner.appendChild(chip);
-    });
-
-    // ── Collapse / expand the issue bar ─────────────────────
-    let filterCollapsed = true; // start collapsed
-    function setFilterCollapsed(collapsed) {
-      filterCollapsed = collapsed;
-      if (collapsed) {
-        // measure current height, then animate to 0
-        filterBar.style.maxHeight = filterBar.scrollHeight + 'px';
-        filterBar.getBoundingClientRect(); // reflow
-        filterBar.classList.add('collapsed');
-        filterBar.addEventListener('transitionend', function done() {
-          filterBar.removeEventListener('transitionend', done);
-          if (filterCollapsed) filterBar.style.maxHeight = '';
-        });
-      } else {
-        filterBar.classList.remove('collapsed');
-        const h = filterBar.scrollHeight;
-        filterBar.style.maxHeight = h + 'px';
-        filterBar.addEventListener('transitionend', function done() {
-          filterBar.removeEventListener('transitionend', done);
-          if (!filterCollapsed) filterBar.style.maxHeight = '';
-        });
-      }
-      if (toggleBtn) {
-        toggleBtn.classList.toggle('is-collapsed', collapsed);
-        toggleBtn.setAttribute('aria-expanded', String(!collapsed));
-        const chev = toggleBtn.querySelector('.toggle-chevron');
-        if (chev) chev.textContent = collapsed ? '▸' : '▾';
-      }
-      repositionBars();
-    }
-    if (toggleBtn) {
-      toggleBtn.addEventListener('click', () => setFilterCollapsed(!filterCollapsed));
-    }
-
-    // ── Sticky bar repositioning ────────────────────────────
-    function repositionBars() {
-      const tocEl = document.querySelector('.state-toc');
-      if (!tocEl) return;
-      const tocH    = tocEl.offsetHeight;
-      const filterH = filterCollapsed ? 0 : (filterBar ? filterBar.scrollHeight : 0);
-      if (filterBar)  filterBar.style.top  = tocH + 'px';
-      if (statusBar) statusBar.style.top   = (tocH + filterH) + 'px';
-    }
-    repositionBars();
-    window.addEventListener('resize', repositionBars);
-    if (statusBar) { statusBar.style.position = 'sticky'; statusBar.style.zIndex = '98'; }
-
-    // ── Apply both filters together (AND-logic) ──────────────
-    function applyFilters() {
-      const sId = activeState;
-      const iss = activeIssue;
-
-      // 1. Cards
-      allCards.forEach(card => {
-        const { stateId, issue } = cardMeta.get(card);
-        const stateMatch = !sId || stateId === sId;
-        const issueMatch = !iss || issue === iss;
-        card.classList.toggle('issue-hidden', !(stateMatch && issueMatch));
-      });
-
-      // 2. Hide empty state sections
-      allSections.forEach(sec => {
-        const hasVisible = sec.querySelectorAll('.entry-card:not(.issue-hidden)').length > 0;
-        sec.classList.toggle('issue-empty', !hasVisible);
-      });
-
-      // 3. TOC chip dim/active states
-      tocChips.forEach(chip => {
-        const chipId  = chip.dataset.state ||
-                        (chip.getAttribute('href') || '').replace('#','').replace(/^state-/, '');
-        chip.classList.toggle('state-active', chipId === sId);
-        if (iss) {
-          const stateIssues = stateToIssues[chipId] || new Set();
-          chip.classList.toggle('state-dimmed', !stateIssues.has(iss));
-        } else {
-          chip.classList.remove('state-dimmed');
-        }
-      });
-
-      // 4. Issue chip dim/active states + counts
-      const issueChips = filterInner.querySelectorAll('.issue-chip:not(.all-chip)');
-      issueChips.forEach(chip => {
-        const chipIssue = chip.dataset.issue;
-        chip.classList.toggle('active', chipIssue === iss);
-        if (sId) {
-          const stateIssues = stateToIssues[sId] || new Set();
-          if (stateIssues.has(chipIssue)) {
-            const count = allCards.filter(c => {
-              const m = cardMeta.get(c);
-              return m.stateId === sId && m.issue === chipIssue;
-            }).length;
-            chip.textContent = `${chipIssue} (${count})`;
-            chip.classList.remove('issue-dimmed');
-          } else {
-            chip.textContent = `${chipIssue} (0)`;
-            chip.classList.add('issue-dimmed');
-          }
-        } else {
-          chip.textContent = `${chipIssue} (${globalIssueCounts[chipIssue]})`;
-          chip.classList.remove('issue-dimmed');
-        }
-      });
-      if (allIssueChip) allIssueChip.classList.toggle('active', !iss);
-
-      // 5. Status bar + toggle dot
-      updateStatusBar();
-      if (toggleBtn)   toggleBtn.classList.toggle('has-filter', !!(sId || iss));
-      if (navClearBtn) navClearBtn.classList.toggle('visible', !!(sId || iss));
-
-      // 6. TOC label text
-      const labelText = document.querySelector('.toc-label-text');
-      if (labelText) labelText.textContent = sId ? 'State Filter Active' : 'Jump to State';
-    }
-
-    function updateStatusBar() {
-      if (!statusBar || !statusInner) return;
-      const hasFilter = activeState || activeIssue;
-      statusBar.style.display = hasFilter ? '' : 'none';
-      repositionBars();
-      if (!hasFilter) return;
-
-      Array.from(statusInner.children).forEach(child => {
-        if (!child.classList.contains('filter-clear-all')) child.remove();
-      });
-      const label = document.createElement('span');
-      label.className = 'status-label';
-      label.textContent = 'Showing:';
-      statusInner.insertBefore(label, clearAllBtn);
-      if (activeIssue) {
-        const tag = document.createElement('span');
-        tag.className = 'status-tag';
-        tag.textContent = activeIssue;
-        statusInner.insertBefore(tag, clearAllBtn);
-      }
-      if (activeIssue && activeState) {
-        const sep = document.createElement('span');
-        sep.className = 'status-label';
-        sep.textContent = 'in';
-        statusInner.insertBefore(sep, clearAllBtn);
-      }
-      if (activeState) {
-        const chip = tocChips.find(c =>
-          (c.dataset.state || (c.getAttribute('href')||'').replace('#','').replace(/^state-/, '')) === activeState
-        );
-        const stateName = chip ? chip.getAttribute('title').split('—')[0].trim() : activeState;
-        const tag = document.createElement('span');
-        tag.className = 'status-tag state-tag';
-        tag.textContent = stateName;
-        statusInner.insertBefore(tag, clearAllBtn);
-      }
-      const visCount = allCards.filter(c => !c.classList.contains('issue-hidden')).length;
-      const cLabel = document.createElement('span');
-      cLabel.className = 'status-label';
-      cLabel.textContent = `— ${visCount} item${visCount !== 1 ? 's' : ''}`;
-      statusInner.insertBefore(cLabel, clearAllBtn);
-    }
-
-    // ── Wire TOC chip clicks ─────────────────────────────────
-    tocChips.forEach(chip => {
-      chip.addEventListener('click', e => {
-        e.preventDefault();
-        const chipId = chip.dataset.state ||
-                       (chip.getAttribute('href')||'').replace('#','').replace(/^state-/, '');
-        if (activeState === chipId) {
-          // Second click on the same chip = clear filter and scroll to that section
-          activeState = null;
-          applyFilters();
-          const target = document.getElementById('state-' + chipId);
-          if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        } else {
-          activeState = chipId;
-          applyFilters();
-        }
-      });
-    });
-
-    // ── Wire issue chip clicks ───────────────────────────────
-    const issueChipsAll = filterInner.querySelectorAll('.issue-chip:not(.all-chip)');
-    if (allIssueChip) {
-      allIssueChip.addEventListener('click', () => { activeIssue = null; applyFilters(); });
-    }
-    issueChipsAll.forEach(chip => {
-      chip.addEventListener('click', () => {
-        const clicked = chip.dataset.issue;
-        activeIssue = (activeIssue === clicked) ? null : clicked;
-        applyFilters();
-      });
-    });
-
-    // ── Clear-all buttons ────────────────────────────────────
-    if (clearAllBtn) {
-      clearAllBtn.addEventListener('click', () => {
-        activeState = null; activeIssue = null; applyFilters();
-      });
-    }
-    if (navClearBtn) {
-      navClearBtn.addEventListener('click', () => {
-        activeState = null; activeIssue = null; applyFilters();
-      });
-    }
-
-    // Initial render (collapsed)
-    filterBar.style.transition = 'none';
-    setFilterCollapsed(true);
-    requestAnimationFrame(() => { filterBar.style.transition = ''; });
-    applyFilters();
-
-  })();
-
-  // ════════════════════════════════════════════════════════════════════════
-  // SCROLL-SPY: highlight active state chip on scroll (only when no manual
-  // state filter is active — managed by .state-active class)
-  // ════════════════════════════════════════════════════════════════════════
-  const sections = Array.from(document.querySelectorAll('.state-section'));
-  const allChips = Array.from(document.querySelectorAll('.toc-chip'));
-  const chipMap  = {};
-  allChips.forEach(c => {
-    const anchor = c.dataset.state ||
-                   (c.getAttribute('href')||'').replace('#','').replace(/^state-/, '');
-    chipMap['state-' + anchor] = c;
-  });
-
-  let ticking = false;
-  window.addEventListener('scroll', () => {
-    if (!ticking) {
-      window.requestAnimationFrame(() => {
-        let current = '';
-        sections.forEach(sec => {
-          const rect = sec.getBoundingClientRect();
-          if (rect.top <= 140 && !sec.classList.contains('issue-empty')) current = sec.id;
-        });
-        const anyActive = allChips.some(c => c.classList.contains('state-active'));
-        if (!anyActive) {
-          allChips.forEach(c => c.classList.remove('active'));
-          if (current && chipMap[current]) chipMap[current].classList.add('active');
-        }
-        ticking = false;
-      });
-      ticking = true;
-    }
-  });
-
-  // ════════════════════════════════════════════════════════════════════════
-  // Video Overview — collapsible PiP widget with pop-out
-  //   • Starts collapsed (header bar only) so the iframe doesn't load up front
-  //   • ▸/▾ toggle expands/collapses the player
-  //   • ⧉ pop-out opens the public Wistia page in a sized new window
-  //   • ✕ closes the widget; a floating launcher button reopens it
-  //   • Header is draggable so it doesn't cover content the user wants to read
-  // ════════════════════════════════════════════════════════════════════════
-  (function VideoPiPWidget() {
-    const pip       = document.getElementById('video-pip');
-    const launcher  = document.getElementById('video-pip-launcher');
-    const header    = document.getElementById('video-pip-header');
-    const body      = document.getElementById('video-pip-body');
-    const toggleBtn = document.getElementById('video-pip-toggle');
-    const popoutBtn = document.getElementById('video-pip-popout');
-    const closeBtn  = document.getElementById('video-pip-close');
-
-    if (!pip || !launcher || !body) return;
-
-    let iframeLoaded = false;
-    function ensureIframe() {
-      if (iframeLoaded) return;
-      const iframe = document.createElement('iframe');
-      iframe.src         = WEEKLY_VIDEO.embedUrl;
-      iframe.title       = 'Video Overview';
-      iframe.allow       = 'autoplay; fullscreen; picture-in-picture';
-      iframe.allowFullscreen = true;
-      iframe.referrerPolicy = 'no-referrer-when-downgrade';
-      body.appendChild(iframe);
-      iframeLoaded = true;
-    }
-
-    function setExpanded(expanded) {
-      if (expanded) {
-        ensureIframe();
-        pip.classList.remove('collapsed');
-        body.hidden = false;
-        toggleBtn.textContent = '▾';
-        toggleBtn.title = 'Collapse video';
-        toggleBtn.setAttribute('aria-label', 'Collapse video');
-      } else {
-        pip.classList.add('collapsed');
-        body.hidden = true;
-        toggleBtn.textContent = '▸';
-        toggleBtn.title = 'Expand video';
-        toggleBtn.setAttribute('aria-label', 'Expand video');
-      }
-    }
-
-    // Toggle expand/collapse — clicking the header (but not its buttons) also toggles
-    toggleBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      setExpanded(pip.classList.contains('collapsed'));
-    });
-    header.addEventListener('click', (e) => {
-      // Ignore clicks on header buttons; only toggle on bare-header click
-      if (e.target.closest('.video-pip-btn')) return;
-      // Ignore if a drag actually moved the widget
-      if (header.dataset.dragged === '1') {
-        header.dataset.dragged = '';
-        return;
-      }
-      setExpanded(pip.classList.contains('collapsed'));
-    });
-
-    // Pop-out: open the Wistia page in a sized new window
-    popoutBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const w = WEEKLY_VIDEO.popoutW, h = WEEKLY_VIDEO.popoutH;
-      const left = Math.max(0, (window.screen.availWidth  - w) / 2);
-      const top  = Math.max(0, (window.screen.availHeight - h) / 2);
-      const features = `popup=yes,width=${w},height=${h},left=${left},top=${top},` +
-                       `noopener,noreferrer,resizable,scrollbars=yes`;
-      const popup = window.open(WEEKLY_VIDEO.popoutUrl, 'wa_weekly_video', features);
-      // Browsers that block popups will return null — fall back to a normal new tab
-      if (!popup) {
-        window.open(WEEKLY_VIDEO.popoutUrl, '_blank', 'noopener,noreferrer');
-        return;
-      }
-      // Once popped out, hide the in-page widget and surface the launcher so the
-      // user can bring it back without reloading
-      pip.classList.add('hidden');
-      launcher.classList.add('visible');
-    });
-
-    // Close → hide widget, show launcher
-    closeBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      pip.classList.add('hidden');
-      launcher.classList.add('visible');
-    });
-
-    // Launcher → restore widget (collapsed, so iframe doesn't auto-load again)
-    launcher.addEventListener('click', () => {
-      pip.classList.remove('hidden');
-      launcher.classList.remove('visible');
-      setExpanded(false);
-    });
-
-    // ── Drag the widget by its header ─────────────────────
-    let dragState = null;
-    header.addEventListener('mousedown', (e) => {
-      if (e.target.closest('.video-pip-btn')) return;
-      const rect = pip.getBoundingClientRect();
-      dragState = {
-        startX: e.clientX,
-        startY: e.clientY,
-        origLeft: rect.left,
-        origTop:  rect.top,
-        moved: false,
-      };
-      // Switch to absolute pixel positioning so movement is precise
-      pip.style.left   = rect.left + 'px';
-      pip.style.top    = rect.top  + 'px';
-      pip.style.right  = 'auto';
-      pip.style.bottom = 'auto';
-      e.preventDefault();
-    });
-    window.addEventListener('mousemove', (e) => {
-      if (!dragState) return;
-      const dx = e.clientX - dragState.startX;
-      const dy = e.clientY - dragState.startY;
-      if (Math.abs(dx) + Math.abs(dy) > 3) dragState.moved = true;
-      // Clamp inside the viewport
-      const rect = pip.getBoundingClientRect();
-      const newLeft = Math.min(
-        Math.max(0, dragState.origLeft + dx),
-        window.innerWidth  - rect.width
-      );
-      const newTop  = Math.min(
-        Math.max(0, dragState.origTop  + dy),
-        window.innerHeight - rect.height
-      );
-      pip.style.left = newLeft + 'px';
-      pip.style.top  = newTop  + 'px';
-    });
-    window.addEventListener('mouseup', () => {
-      if (!dragState) return;
-      if (dragState.moved) header.dataset.dragged = '1';
-      dragState = null;
-    });
-
-    // Start collapsed (header bar only)
-    setExpanded(false);
-  })();
-
-  // ════════════════════════════════════════════════════════════════════════
-  // CONTACT MODAL — "Ask David"
-  //   • Opens via the floating "Ask David" FAB or any inline [data-open-contact]
-  //   • Subject defaults to "W/A Topline — " (editable)
-  //   • Optional checkbox appends report period + active filter context
-  //   • "Open in Email" → mailto: launch (works with default mail client)
-  //   • "Copy to Clipboard" → puts a formatted email on the clipboard for webmail
-  // ════════════════════════════════════════════════════════════════════════
-  (function ContactModal() {
-    const fab     = document.getElementById('contact-fab');
-    const modal   = document.getElementById('contact-modal');
-    const card    = modal ? modal.querySelector('.contact-modal-card') : null;
-    const subject = document.getElementById('contact-subject');
-    const message = document.getElementById('contact-message');
-    const include = document.getElementById('contact-include-context');
-    const form    = document.getElementById('contact-form');
-    const copyBtn = document.getElementById('contact-copy');
-    const status  = document.getElementById('contact-status');
-    if (!fab || !modal || !form) return;
-
-    const RECIPIENT     = 'david@whiteboardadvisors.com';
-    const REPORT_TITLE  = 'W/A Topline Intelligence';
-    const REPORT_PERIOD = (function () {
-      // Pull the live date range from the masthead so it stays accurate
-      const tag = document.querySelector('.date-tag');
-      return tag ? tag.textContent.trim() : '';
-    })();
-
-    function open() {
-      modal.hidden = false;
-      requestAnimationFrame(() => modal.classList.add('open'));
-      document.body.style.overflow = 'hidden';
-      setTimeout(() => message && message.focus(), 80);
-    }
-    function close() {
-      modal.classList.remove('open');
-      setTimeout(() => {
-        modal.hidden = true;
-        if (status) { status.textContent = ''; status.className = 'contact-status'; }
-      }, 200);
-      document.body.style.overflow = '';
-    }
-
-    // Build a context block (report + active filters) for the email signature
-    function getContext() {
-      if (!include || !include.checked) return '';
-      const lines = ['', '— — —', `${REPORT_TITLE}${REPORT_PERIOD ? ' · ' + REPORT_PERIOD : ''}`];
-      const stateActive = document.querySelector('.toc-chip.state-active');
-      if (stateActive) {
-        const stateName = (stateActive.getAttribute('title') || '').split('—')[0].trim()
-                       || stateActive.textContent.trim();
-        lines.push(`Filtered to state: ${stateName}`);
-      }
-      const issueActive = document.querySelector('.issue-chip.active:not(.all-chip)');
-      if (issueActive && issueActive.dataset.issue) {
-        lines.push(`Filtered to issue: ${issueActive.dataset.issue}`);
-      }
-      const visible = document.querySelectorAll('.entry-card:not(.issue-hidden)').length;
-      if (visible) lines.push(`(${visible} item${visible === 1 ? '' : 's'} visible at time of writing)`);
-      return lines.join('\n');
-    }
-
-    function buildEmail() {
-      const subj = (subject.value || '').trim() || `${REPORT_TITLE} — Question`;
-      const body = ((message.value || '').trim()) + getContext();
-      return { subj, body };
-    }
-    function setStatus(text, kind) {
-      if (!status) return;
-      status.textContent = text;
-      status.className = 'contact-status' + (kind ? ' ' + kind : '');
-    }
-
-    // Open triggers — floating FAB and any inline "Email David" link
-    fab.addEventListener('click', open);
-    document.querySelectorAll('[data-open-contact]').forEach(el => {
-      el.addEventListener('click', e => { e.preventDefault(); open(); });
-    });
-
-    // Close triggers — backdrop, X button, Escape key
-    modal.querySelectorAll('[data-close]').forEach(el => el.addEventListener('click', close));
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Escape' && !modal.hidden) close();
-    });
-
-    // Basic focus trap — Tab / Shift+Tab cycle inside the card
-    modal.addEventListener('keydown', e => {
-      if (e.key !== 'Tab' || modal.hidden) return;
-      const focusables = card.querySelectorAll(
-        'button, input, textarea, select, [tabindex]:not([tabindex="-1"])'
-      );
-      if (!focusables.length) return;
-      const first = focusables[0], last = focusables[focusables.length - 1];
-      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-    });
-
-    // Submit → open user's default mail client with pre-filled message
-    form.addEventListener('submit', e => {
-      e.preventDefault();
-      if (!message.value.trim()) {
-        message.focus();
-        setStatus('Please write a message first.', 'error');
-        return;
-      }
-      const { subj, body } = buildEmail();
-      const url = 'mailto:' + RECIPIENT
-                + '?subject=' + encodeURIComponent(subj)
-                + '&body='    + encodeURIComponent(body);
-      window.location.href = url;
-      setStatus('✓ Opened your email client. If nothing happened, try Copy to Clipboard.', 'success');
-    });
-
-    // Copy formatted email to clipboard — fallback for webmail users
-    copyBtn.addEventListener('click', async () => {
-      if (!message.value.trim()) {
-        message.focus();
-        setStatus('Please write a message first.', 'error');
-        return;
-      }
-      const { subj, body } = buildEmail();
-      const text = `To: ${RECIPIENT}\nSubject: ${subj}\n\n${body}`;
-      let ok = false;
-      try {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          await navigator.clipboard.writeText(text);
-          ok = true;
-        }
-      } catch (err) { /* fall through to legacy fallback */ }
-      if (!ok) {
-        const ta = document.createElement('textarea');
-        ta.value = text;
-        ta.style.position = 'fixed'; ta.style.left = '-9999px';
-        document.body.appendChild(ta);
-        ta.select();
-        try { ok = document.execCommand('copy'); } catch (err) { ok = false; }
-        document.body.removeChild(ta);
-      }
-      setStatus(
-        ok ? '✓ Copied to clipboard. Paste it into your email tool.'
-           : "Couldn't copy automatically — please select the modal text and copy manually.",
-        ok ? 'success' : 'error'
-      );
-    });
-  })();
-});
-</script>
-</body>
-</html>
+if __name__ == "__main__":
+    main()
