@@ -387,6 +387,21 @@ def update_panel_marker(html, marker_key, new_inner_html):
     return pattern.sub(f"{begin}\n      {new_inner_html}\n      {end}", html)
 
 
+def update_inline_marker(html, marker_key, new_inner_html):
+    """
+    Replace content between <!-- PYTHON:{KEY} --> and <!-- PYTHON:END_{KEY} -->
+    WITHOUT inserting newlines or indentation. Use for markers that sit inline
+    inside a <span>, <p>, or other inline element (e.g. the masthead date pill
+    and the overview-period eyebrow).
+    """
+    begin   = f"<!-- PYTHON:{marker_key} -->"
+    end     = f"<!-- PYTHON:END_{marker_key} -->"
+    pattern = re.compile(re.escape(begin) + r".*?" + re.escape(end), re.DOTALL)
+    if not pattern.search(html):
+        return html
+    return pattern.sub(f"{begin}{new_inner_html}{end}", html)
+
+
 def update_script_config(html, latest_item_date, window_str, total, qualifying, source):
     config_block = f"""/* PYTHON:BEGIN_SCRIPT_CONFIG */
 const MEMO_CONFIG = {{
@@ -408,6 +423,16 @@ const MEMO_CONFIG = {{
 
 
 def update_static_dates(html, latest_display, cutoff_display, qualifying, hot_count, state_count):
+    # ── MARKER-BASED UPDATES (primary path) ────────────────────────────────────
+    # These two <!-- PYTHON:KEY --> markers wrap the masthead date pill (line ~908)
+    # and the overview-period eyebrow (line ~1008) in index.html. They're invisible
+    # in the browser and immune to surface-level HTML changes — much more robust
+    # than the regex fallbacks below.
+    date_range = f"{cutoff_display} \u2013 {latest_display}"   # en-dash
+    html = update_inline_marker(html, "HEADER_DATE_RANGE", date_range)
+    html = update_inline_marker(html, "OVERVIEW_PERIOD",   date_range)
+
+    # ── REGEX FALLBACKS (silent no-op when patterns don't match) ──────────────
     html = re.sub(r'(<div class="stat-number total">)\d+(</div>)', rf'\g<1>{qualifying}\2', html)
     html = re.sub(r'(<div class="stat-number hot">)\d+(</div>)', rf'\g<1>{hot_count}\2', html)
     html = re.sub(r'(<div class="stat-number states">)\d+(</div>)', rf'\g<1>{state_count}\2', html)
