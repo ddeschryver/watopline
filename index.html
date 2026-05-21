@@ -208,7 +208,7 @@
     letter-spacing: 0.15em; text-transform: uppercase;
     padding: 3px 9px 3px 7px; cursor: pointer; border-radius: 3px;
     transition: all 0.15s; white-space: nowrap; flex-shrink: 0;
-    margin-left: auto; line-height: 1.4;
+    line-height: 1.4;
   }
   .filter-toggle-btn:hover { background: var(--hmh-navy); color: white; border-color: var(--hmh-navy); }
   .filter-toggle-btn.has-filter {
@@ -329,6 +329,61 @@
   /* ── FILTER BEHAVIOR CLASSES ───────────────────────── */
   .entry-card.issue-hidden { display: none; }
   .state-section.issue-empty { display: none; }
+
+  /* ── FLAG (W/A PRIORITY) QUICK FILTER ──────────────── */
+  .flag-toggle-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: rgba(13,27,46,0.05);
+    border: 1px solid var(--border-light);
+    color: var(--text-muted);
+    font-family: 'Source Serif 4', serif;
+    font-size: 9px; font-weight: 700;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    padding: 3px 9px; cursor: pointer; border-radius: 3px;
+    transition: all 0.15s; white-space: nowrap; flex-shrink: 0;
+    line-height: 1.4; margin-left: auto;
+  }
+  .flag-toggle-btn:hover {
+    background: var(--hmh-navy); color: white; border-color: var(--hmh-navy);
+  }
+  .flag-toggle-btn.active {
+    background: var(--hmh-accent); color: white;
+    border-color: var(--hmh-accent);
+    box-shadow: 0 0 0 2px rgba(var(--hmh-accent-rgb), 0.22);
+  }
+  .flag-toggle-icon { font-style: normal; font-size: 11px; line-height: 1; }
+  .flag-toggle-count {
+    background: rgba(13,27,46,0.10);
+    color: inherit;
+    padding: 1px 6px;
+    border-radius: 8px;
+    font-size: 9px;
+    font-weight: 800;
+    min-width: 14px;
+    text-align: center;
+    letter-spacing: 0.04em;
+  }
+  .flag-toggle-btn.active .flag-toggle-count {
+    background: rgba(255,255,255,0.22);
+    color: white;
+  }
+  .flag-toggle-btn[data-count="0"] { opacity: 0.55; cursor: not-allowed; }
+  .flag-toggle-btn[data-count="0"]:hover {
+    background: rgba(13,27,46,0.05); color: var(--text-muted);
+    border-color: var(--border-light); box-shadow: none;
+  }
+
+  /* "🚩 TopLine" chip shown on cards where Flag == 2 */
+  .meta-chip.flag-chip {
+    background: rgba(var(--hmh-accent-rgb), 0.10);
+    border-color: rgba(var(--hmh-accent-rgb), 0.45);
+    color: var(--hmh-accent-dark);
+    font-weight: 700;
+  }
+
+  /* Visibility class set when the Flag quick filter is active */
+  .entry-card.flag-hidden { display: none; }
+  .state-section.flag-empty { display: none; }
 
   /* ── Video Overview WIDGET (PiP) ─────────────── */
   .video-pip {
@@ -909,7 +964,7 @@
       <span class="confidential-pill">Privileged &amp; Confidential</span>
     </div>
     <h1 class="memo-title">Market Intelligence <span>Topline</span></h1>
-    <p class="memo-subtitle">K–12 Education Policy · Action Score 3 · Rolling 7-Day Review</p>
+    <p class="memo-subtitle">K–12 Education Policy · Rolling 7-Day Review · Scored 2+</p>
   </div>
   <div class="masthead-rule"></div>
 </header>
@@ -928,6 +983,14 @@
           <span style="background:var(--hot-3-bg);border:1px solid var(--hot-3-border);color:var(--hot-3-color);padding:0 5px;border-radius:2px;font-size:9px;font-weight:700;">3+</span>
         </span>
       </div>
+      <button class="flag-toggle-btn" id="flag-toggle-btn"
+              type="button"
+              title="Show only TopLine items (Flag = 2 in the source sheet)"
+              aria-pressed="false" data-count="0">
+        <span class="flag-toggle-icon" aria-hidden="true">🚩</span>
+        <span class="flag-toggle-label">TopLine</span>
+        <span class="flag-toggle-count" id="flag-toggle-count">0</span>
+      </button>
       <button class="filter-toggle-btn is-collapsed" id="filter-toggle-btn"
               title="Toggle issue filter" aria-expanded="false" aria-controls="issue-filter-bar">
         <i class="toggle-chevron">▸</i>
@@ -2726,7 +2789,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ════════════════════════════════════════════════════════════════════════
-  // UNIFIED FILTER SYSTEM (state + issue, AND-logic)
+  // UNIFIED FILTER SYSTEM (state + issue + flag, AND-logic)
   // Adapted from index-amplify.html — selects topline's .meta-chip.issue
   // ════════════════════════════════════════════════════════════════════════
   (function UnifiedFilterSystem() {
@@ -2740,11 +2803,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const clearAllBtn = document.getElementById('filter-clear-all');
     const toggleBtn   = document.getElementById('filter-toggle-btn');
     const navClearBtn = document.getElementById('nav-clear-btn');
+    const flagBtn     = document.getElementById('flag-toggle-btn');
+    const flagCountEl = document.getElementById('flag-toggle-count');
 
     if (!filterInner || allCards.length === 0) return;
 
     let activeState = null;
     let activeIssue = null;
+    let activeFlag  = false;   // true = show only Flag=2 cards
 
     // ── Index cards ────────────────────────────────────────
     const cardMeta      = new Map();
@@ -2757,12 +2823,19 @@ document.addEventListener("DOMContentLoaded", () => {
       // topline cards use <span class="meta-chip issue">…</span>
       const issueEl = card.querySelector('.meta-chip.issue');
       const issue   = issueEl ? issueEl.textContent.trim() : null;
-      cardMeta.set(card, { stateId, issue });
+      // Flag (W/A priority) — value of 2 marks TopLine priority items
+      const flagRaw = card.getAttribute('data-flag');
+      const flag    = flagRaw ? parseInt(flagRaw, 10) || 0 : 0;
+      cardMeta.set(card, { stateId, issue, flag });
       if (stateId && issue) {
         if (!stateToIssues[stateId]) stateToIssues[stateId] = new Set();
         stateToIssues[stateId].add(issue);
       }
     });
+
+    // Total Flag=2 items across the whole report (used for the button badge
+    // when no other filters are active).
+    const totalFlaggedCount = allCards.filter(c => cardMeta.get(c).flag === 2).length;
 
     // ── Build issue chips dynamically, sorted by frequency ──
     const globalIssueCounts = {};
@@ -2831,17 +2904,19 @@ document.addEventListener("DOMContentLoaded", () => {
     window.addEventListener('resize', repositionBars);
     if (statusBar) { statusBar.style.position = 'sticky'; statusBar.style.zIndex = '98'; }
 
-    // ── Apply both filters together (AND-logic) ──────────────
+    // ── Apply all filters together (AND-logic) ───────────────
     function applyFilters() {
       const sId = activeState;
       const iss = activeIssue;
+      const flg = activeFlag;
 
       // 1. Cards
       allCards.forEach(card => {
-        const { stateId, issue } = cardMeta.get(card);
+        const { stateId, issue, flag } = cardMeta.get(card);
         const stateMatch = !sId || stateId === sId;
         const issueMatch = !iss || issue === iss;
-        card.classList.toggle('issue-hidden', !(stateMatch && issueMatch));
+        const flagMatch  = !flg || flag === 2;
+        card.classList.toggle('issue-hidden', !(stateMatch && issueMatch && flagMatch));
       });
 
       // 2. Hide empty state sections
@@ -2890,8 +2965,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // 5. Status bar + toggle dot
       updateStatusBar();
+      const anyFilter = !!(sId || iss || flg);
       if (toggleBtn)   toggleBtn.classList.toggle('has-filter', !!(sId || iss));
-      if (navClearBtn) navClearBtn.classList.toggle('visible', !!(sId || iss));
+      if (navClearBtn) navClearBtn.classList.toggle('visible', anyFilter);
+
+      // 5b. Flag toggle button — count reflects how many Flag=2 items would
+      // be visible given the current state+issue filters. When the flag
+      // filter is itself active, the count shows the resulting visible total.
+      if (flagBtn) {
+        let flaggedVisible;
+        if (flg) {
+          flaggedVisible = allCards.filter(c => !c.classList.contains('issue-hidden')).length;
+        } else {
+          flaggedVisible = allCards.filter(c => {
+            const m = cardMeta.get(c);
+            const stateMatch = !sId || m.stateId === sId;
+            const issueMatch = !iss || m.issue === iss;
+            return m.flag === 2 && stateMatch && issueMatch;
+          }).length;
+        }
+        if (flagCountEl) flagCountEl.textContent = flaggedVisible;
+        flagBtn.setAttribute('data-count', String(flaggedVisible));
+        flagBtn.classList.toggle('active', flg);
+        flagBtn.setAttribute('aria-pressed', String(flg));
+      }
 
       // 6. TOC label text
       const labelText = document.querySelector('.toc-label-text');
@@ -2900,7 +2997,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function updateStatusBar() {
       if (!statusBar || !statusInner) return;
-      const hasFilter = activeState || activeIssue;
+      const hasFilter = activeState || activeIssue || activeFlag;
       statusBar.style.display = hasFilter ? '' : 'none';
       repositionBars();
       if (!hasFilter) return;
@@ -2912,6 +3009,18 @@ document.addEventListener("DOMContentLoaded", () => {
       label.className = 'status-label';
       label.textContent = 'Showing:';
       statusInner.insertBefore(label, clearAllBtn);
+      if (activeFlag) {
+        const tag = document.createElement('span');
+        tag.className = 'status-tag';
+        tag.textContent = '🚩 TopLine';
+        statusInner.insertBefore(tag, clearAllBtn);
+      }
+      if (activeFlag && (activeIssue || activeState)) {
+        const sep = document.createElement('span');
+        sep.className = 'status-label';
+        sep.textContent = 'and';
+        statusInner.insertBefore(sep, clearAllBtn);
+      }
       if (activeIssue) {
         const tag = document.createElement('span');
         tag.className = 'status-tag';
@@ -2976,13 +3085,29 @@ document.addEventListener("DOMContentLoaded", () => {
     // ── Clear-all buttons ────────────────────────────────────
     if (clearAllBtn) {
       clearAllBtn.addEventListener('click', () => {
-        activeState = null; activeIssue = null; applyFilters();
+        activeState = null; activeIssue = null; activeFlag = false; applyFilters();
       });
     }
     if (navClearBtn) {
       navClearBtn.addEventListener('click', () => {
-        activeState = null; activeIssue = null; applyFilters();
+        activeState = null; activeIssue = null; activeFlag = false; applyFilters();
       });
+    }
+
+    // ── Wire flag toggle button ──────────────────────────────
+    if (flagBtn) {
+      flagBtn.addEventListener('click', () => {
+        // Disabled when there are zero flagged items
+        if (totalFlaggedCount === 0) return;
+        activeFlag = !activeFlag;
+        applyFilters();
+      });
+      // Initialize disabled state if no Flag=2 items exist in this run
+      if (totalFlaggedCount === 0) {
+        flagBtn.setAttribute('data-count', '0');
+        flagBtn.setAttribute('title',
+          'No TopLine items (Flag = 2) in the current report');
+      }
     }
 
     // Initial render (collapsed)
