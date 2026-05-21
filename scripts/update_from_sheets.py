@@ -55,6 +55,8 @@ LINK_COL             = "Link"
 WHY_COL              = "WHY THIS MATTERS1"
 SOUNDBYTE_COL        = "SoundByte"
 STATE_COL            = "State"
+FLAG_COL             = "Flag"          # W/A priority flag — value of 2 = TopLine priority item
+FLAG_PRIORITY_VALUE  = 2
 SHOW_BAD_GOOD_FOR    = {"Budget", "Finance"}
 
 # ── HTML INJECTION MARKERS ───────────────────────────────────────────────────────
@@ -200,6 +202,14 @@ def build_entry_card(record):
     except (ValueError, TypeError):
         bad_good_int = 0
 
+    # ── Flag (W/A priority) ────────────────────────────────────────────────
+    # Read as int when possible so the data-flag attribute is stable; the
+    # JS filter compares to "2".
+    try:
+        flag_val = int(record.get(FLAG_COL, 0) or 0)
+    except (TypeError, ValueError):
+        flag_val = 0
+
     try:
         display_date = record["_date_obj"].strftime("%B %-d, %Y")
     except Exception:
@@ -222,6 +232,11 @@ def build_entry_card(record):
             bg_chip = '<span class="badgood-tag badgood-2">➡ Flat</span>'
         elif bad_good_int == 3:
             bg_chip = '<span class="badgood-tag badgood-3">📈 Improving</span>'
+
+    # ── TopLine priority chip (only when Flag == 2) ────────────────────────
+    flag_chip = ""
+    if flag_val == FLAG_PRIORITY_VALUE:
+        flag_chip = '<span class="meta-chip flag-chip">🚩 TopLine</span>'
 
     why_html = f'<span class="why-matters">{escape(why)}</span> ' if why else ""
 
@@ -247,12 +262,13 @@ def build_entry_card(record):
         )
 
     return f"""\
-  <div class="entry-card {card_cls}{sb_extra_class}">
+  <div class="entry-card {card_cls}{sb_extra_class}" data-flag="{flag_val}">
 {sb_banner}    <div class="entry-meta">
       <span class="meta-chip level">Level: {escape(sector)}</span>
       <span class="meta-chip issue">{escape(issue)}</span>
       <span class="meta-chip date">{escape(display_date)}</span>
       {bg_chip}
+      {flag_chip}
       <div class="actionable-score">{score_tag}</div>
     </div>
     <div class="district-badge">{escape(district)}</div>
@@ -490,6 +506,15 @@ def main():
     hot_count   = sum(1 for r in updates if int(r.get(ACTION_COL, 0) or 0) >= HOT_THRESHOLD)
     state_count = len(state_info)
 
+    # Count W/A-flagged priority items (Flag == 2) among qualifying updates
+    flagged_count = 0
+    for r in updates:
+        try:
+            if int(r.get(FLAG_COL, 0) or 0) == FLAG_PRIORITY_VALUE:
+                flagged_count += 1
+        except (TypeError, ValueError):
+            pass
+
     window_str = f"Rolling {DAYS_WINDOW} days · latest item: {latest_display}"
     rows_str   = f"{total} total → {len(updates)} qualifying"
     source_str = "Whiteboard Advisors Review and Analysis"
@@ -498,7 +523,7 @@ def main():
     updates_html    = build_updates_html(updates)
     toc_html        = build_toc_html(state_info)
     top_issues_html = build_top_issues_html(updates)
-    print(f"  ✓ {len(updates)} cards | {hot_count} high-heat | {state_count} states")
+    print(f"  ✓ {len(updates)} cards | {hot_count} high-heat | {state_count} states | {flagged_count} 🚩 TopLine")
 
     print(f"\n[4] Reading {INDEX_HTML}...")
     if not INDEX_HTML.exists():
@@ -536,7 +561,7 @@ def main():
 
     print("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
     print(f"  Done — {len(updates)} entries | latest: {latest_display}")
-    print(f"  Score 3: {hot_count} | States: {state_count}")
+    print(f"  Score 3: {hot_count} | States: {state_count} | 🚩 TopLine: {flagged_count}")
     print(f"  Window: {cutoff_display} → {latest_display}")
     print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
 
