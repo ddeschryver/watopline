@@ -27,20 +27,20 @@ from pathlib import Path
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
-# ── PATH RESOLUTION ─────────────────────────────────────────────────────────────
+# ── PATH RESOLUTION ──────────────────────────────────────────────────────────[...]
 SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_ROOT  = SCRIPT_DIR.parent
 CREDS_FILE = SCRIPT_DIR / "hmh-index-updates-d657b7e7e128.json"
 INDEX_HTML = REPO_ROOT / "index.html"
 
-# ── GOOGLE SHEETS CONFIG ─────────────────────────────────────────────────────────
+# ── GOOGLE SHEETS CONFIG ────────────────────────────────────────────────────────[...]
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1CHepyOinqrY5nSQqx66C_HAQ0NkKVXBWj5QW13OHfw8"
 SCOPE = [
     "https://spreadsheets.google.com/feeds",
     "https://www.googleapis.com/auth/drive",
 ]
 
-# ── FILTER CONFIG ────────────────────────────────────────────────────────────────
+# ── FILTER CONFIG ───────────────────────────────────────────────────────────[...]
 DAYS_WINDOW          = 7
 DATE_COL             = "Date"
 ACTION_COL           = "Cold-Hot"
@@ -128,7 +128,7 @@ def fetch_records():
         sys.exit(1)
 
 
-# ── STEP 2: FILTER ───────────────────────────────────────────────────────────────
+# ── STEP 2: FILTER ──────────────────────────────────────────────────────────[...]
 def safe(val):
     if val is None:
         return ""
@@ -161,7 +161,16 @@ def filter_records(records):
         except (ValueError, TypeError):
             cold_hot = 0
 
-        if date_obj >= cutoff and cold_hot >= ACTION_MIN_THRESHOLD:
+        try:
+            flag_val = int(record.get(FLAG_COL, 0) or 0)
+        except (TypeError, ValueError):
+            flag_val = 0
+
+        # Include row if it meets the standard threshold OR if it's marked as TopLine priority
+        is_topline_priority = flag_val == FLAG_PRIORITY_VALUE
+        meets_threshold = cold_hot >= ACTION_MIN_THRESHOLD
+
+        if date_obj >= cutoff and (meets_threshold or is_topline_priority):
             updates.append({**record, "_date_obj": date_obj, "_date_str": date_str})
 
     updates.sort(key=lambda r: (
@@ -169,11 +178,11 @@ def filter_records(records):
         -int(r.get(ACTION_COL, 0) or 0),
         str(r.get(ISSUE_COL, ""))
     ))
-    print(f"✓ {len(updates)} qualifying records (last {DAYS_WINDOW} days, Cold-Hot >= {ACTION_MIN_THRESHOLD})")
+    print(f"✓ {len(updates)} qualifying records (last {DAYS_WINDOW} days, Cold-Hot >= {ACTION_MIN_THRESHOLD} or TopLine priority)")
     return updates
 
 
-# ── STEP 3: BUILD HTML ───────────────────────────────────────────────────────────
+# ── STEP 3: BUILD HTML ───────────────────────────────────────────────────────[...]
 
 def score_class(cold_hot):
     try:
@@ -320,7 +329,7 @@ def build_updates_html(updates):
     return "\n\n".join(sections)
 
 
-# ── STATE HEAT DATA ──────────────────────────────────────────────────────────────
+# ── STATE HEAT DATA ────────────────────────────────────────────────────────[...]
 
 def compute_state_heat(updates):
     """Return dict: state_name → {total, hot3, abbrev, id}."""
@@ -349,7 +358,7 @@ def heat_class(n):
 
 
 
-# ── BUILD TOC CHIPS ──────────────────────────────────────────────────────────────
+# ── BUILD TOC CHIPS ────────────────────────────────────────────────────────[...]
 
 def build_toc_html(state_info):
     chips = []
@@ -364,7 +373,7 @@ def build_toc_html(state_info):
     return '    <div class="toc-chips">\n' + "\n".join(chips) + '\n    </div>'
 
 
-# ── BUILD TOP ISSUES ─────────────────────────────────────────────────────────────
+# ── BUILD TOP ISSUES ────────────────────────────────────────────────────────[...]
 
 def build_top_issues_html(updates):
     issue_counts = Counter(safe(r.get(ISSUE_COL)) for r in updates if safe(r.get(ISSUE_COL)))
@@ -384,7 +393,7 @@ def build_top_issues_html(updates):
 
 
 
-# ── INJECTION FUNCTIONS ──────────────────────────────────────────────────────────
+# ── INJECTION FUNCTIONS ────────────────────────────────────────────────────────[...]
 
 def inject_between(html, begin_marker, end_marker, content):
     pattern = re.compile(re.escape(begin_marker) + r".*?" + re.escape(end_marker), re.DOTALL)
@@ -476,7 +485,7 @@ def update_static_dates(html, latest_display, cutoff_display, qualifying, hot_co
     return html
 
 
-# ── MAIN ─────────────────────────────────────────────────────────────────────────
+# ── MAIN ──────────────────────────────────────────────────────────[...]
 
 def main():
     print("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
@@ -487,7 +496,7 @@ def main():
     records = fetch_records()
     total   = len(records)
 
-    print(f"\n[2] Filtering (last {DAYS_WINDOW} days, Cold-Hot >= {ACTION_MIN_THRESHOLD})...")
+    print(f"\n[2] Filtering (last {DAYS_WINDOW} days, Cold-Hot >= {ACTION_MIN_THRESHOLD} or TopLine priority)...")
     updates = filter_records(records)
 
     if updates:
