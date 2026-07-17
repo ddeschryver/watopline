@@ -136,6 +136,18 @@ def safe(val):
     return "" if s.lower() in ("nan", "none") else s
 
 
+def parse_flag(val):
+    """
+    Tolerant flag parser. Handles "2", "2.0", " 2 ", 2, 2.0, booleans,
+    and blank/garbage (-> 0). Immune to the sheet serving the cell as a
+    formatted number rather than plain text.
+    """
+    try:
+        return int(float(str(val).strip()))
+    except (TypeError, ValueError):
+        return 0
+
+
 def filter_records(records):
     cutoff = datetime.datetime.utcnow() - datetime.timedelta(days=DAYS_WINDOW)
     updates = []
@@ -155,10 +167,7 @@ def filter_records(records):
         date_str = str(record.get(DATE_COL, "") or record.get("date", "")).strip()
         
         # Extract values for logging
-        try:
-            flag_val = int(record.get(FLAG_COL, 0) or 0)
-        except (TypeError, ValueError):
-            flag_val = 0
+        flag_val = parse_flag(record.get(FLAG_COL, 0))
         
         try:
             cold_hot = int(record.get(ACTION_COL, 0) or 0)
@@ -255,12 +264,10 @@ def build_entry_card(record):
         bad_good_int = 0
 
     # ── Flag (W/A priority) ────────────────────────────────────────────────
-    # Read as int when possible so the data-flag attribute is stable; the
-    # JS filter compares to "2".
-    try:
-        flag_val = int(record.get(FLAG_COL, 0) or 0)
-    except (TypeError, ValueError):
-        flag_val = 0
+    # Read tolerantly so the data-flag attribute is stable regardless of how
+    # the sheet serves the cell (plain "2", numeric "2.0", etc.); the JS
+    # filter compares to "2".
+    flag_val = parse_flag(record.get(FLAG_COL, 0))
 
     try:
         display_date = record["_date_obj"].strftime("%B %-d, %Y")
@@ -561,11 +568,8 @@ def main():
     # Count W/A-flagged priority items (Flag == 2) among qualifying updates
     flagged_count = 0
     for r in updates:
-        try:
-            if int(r.get(FLAG_COL, 0) or 0) == FLAG_PRIORITY_VALUE:
-                flagged_count += 1
-        except (TypeError, ValueError):
-            pass
+        if parse_flag(r.get(FLAG_COL, 0)) == FLAG_PRIORITY_VALUE:
+            flagged_count += 1
 
     window_str = f"Rolling {DAYS_WINDOW} days · latest item: {latest_display}"
     rows_str   = f"{total} total → {len(updates)} qualifying"
