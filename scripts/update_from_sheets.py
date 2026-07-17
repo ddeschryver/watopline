@@ -27,20 +27,20 @@ from pathlib import Path
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
-# ── PATH RESOLUTION ──────────────────────────────────────────────────────────[...]
+# ── PATH RESOLUTION ─────────────────────────────────────────────────────────[...]
 SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_ROOT  = SCRIPT_DIR.parent
 CREDS_FILE = SCRIPT_DIR / "hmh-index-updates-d657b7e7e128.json"
 INDEX_HTML = REPO_ROOT / "index.html"
 
-# ── GOOGLE SHEETS CONFIG ────────────────────────────────────────────────────────[...]
+# ── GOOGLE SHEETS CONFIG ───────────────────────────────────────────────────────[...]
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1CHepyOinqrY5nSQqx66C_HAQ0NkKVXBWj5QW13OHfw8"
 SCOPE = [
     "https://spreadsheets.google.com/feeds",
     "https://www.googleapis.com/auth/drive",
 ]
 
-# ── FILTER CONFIG ───────────────────────────────────────────────────────────[...]
+# ── FILTER CONFIG ─────────────────────────────────────────────────────────[...]
 DAYS_WINDOW          = 7
 DATE_COL             = "Date"
 ACTION_COL           = "Cold-Hot"
@@ -59,7 +59,7 @@ FLAG_COL             = "Flag"          # W/A priority flag — value of 2 = TopL
 FLAG_PRIORITY_VALUE  = 2
 SHOW_BAD_GOOD_FOR    = {"Budget", "Finance"}
 
-# ── HTML INJECTION MARKERS ───────────────────────────────────────────────────────
+# ── HTML INJECTION MARKERS ──────────────────────────────────────────────────────[...]
 MARKER_BEGIN = "<!-- UPDATES:BEGIN -->"
 MARKER_END   = "<!-- UPDATES:END -->"
 
@@ -128,7 +128,7 @@ def fetch_records():
         sys.exit(1)
 
 
-# ── STEP 2: FILTER ──────────────────────────────────────────────────────────[...]
+# ── STEP 2: FILTER ─────────────────────────────────────────────────────────[...]
 def safe(val):
     if val is None:
         return ""
@@ -139,12 +139,43 @@ def safe(val):
 def filter_records(records):
     cutoff = datetime.datetime.utcnow() - datetime.timedelta(days=DAYS_WINDOW)
     updates = []
+    
+    # Debug counters
+    empty_date_count = 0
+    unparseable_date_count = 0
+    outside_window_count = 0
+    topline_outside_window = 0
+    topline_included = 0
+    threshold_included = 0
+    
+    cutoff_date_str = cutoff.strftime("%Y-%m-%d")
+    print(f"  → Filter cutoff: {cutoff_date_str} (now - {DAYS_WINDOW} days)")
 
-    for record in records:
+    for idx, record in enumerate(records, 1):
         date_str = str(record.get(DATE_COL, "") or record.get("date", "")).strip()
+        
+        # Extract values for logging
+        try:
+            flag_val = int(record.get(FLAG_COL, 0) or 0)
+        except (TypeError, ValueError):
+            flag_val = 0
+        
+        try:
+            cold_hot = int(record.get(ACTION_COL, 0) or 0)
+        except (ValueError, TypeError):
+            cold_hot = 0
+        
+        state = safe(record.get(STATE_COL, "?"))
+        issue = safe(record.get(ISSUE_COL, "?"))
+        
+        # Empty date check
         if not date_str:
+            empty_date_count += 1
+            if flag_val == FLAG_PRIORITY_VALUE:
+                print(f"  ⚠ Row {idx} [{state} | {issue}]: Flag={flag_val} but NO DATE (skipped)")
             continue
 
+        # Try to parse date
         date_obj = None
         for fmt in ("%m/%d/%Y", "%Y-%m-%d", "%m-%d-%Y", "%Y/%m/%d"):
             try:
@@ -154,24 +185,36 @@ def filter_records(records):
                 continue
 
         if date_obj is None:
+            unparseable_date_count += 1
+            print(f"  ⚠ Row {idx} [{state} | {issue}]: Unparseable date '{date_str}' | Flag={flag_val} | Cold-Hot={cold_hot}")
             continue
 
-        try:
-            cold_hot = int(record.get(ACTION_COL, 0) or 0)
-        except (ValueError, TypeError):
-            cold_hot = 0
-
-        try:
-            flag_val = int(record.get(FLAG_COL, 0) or 0)
-        except (TypeError, ValueError):
-            flag_val = 0
-
-        # Include row if it meets the standard threshold OR if it's marked as TopLine priority
+        # Check if within window
         is_topline_priority = flag_val == FLAG_PRIORITY_VALUE
         meets_threshold = cold_hot >= ACTION_MIN_THRESHOLD
+        
+        if date_obj < cutoff:
+            outside_window_count += 1
+            if is_topline_priority:
+                topline_outside_window += 1
+                print(f"  ⚠ Row {idx} [{state} | {issue}]: TopLine Flag={flag_val} but date {date_str} is OUTSIDE {DAYS_WINDOW}-day window (skipped)")
+            continue
 
-        if date_obj >= cutoff and (meets_threshold or is_topline_priority):
+        # Include in results
+        if meets_threshold or is_topline_priority:
+            if is_topline_priority:
+                topline_included += 1
+            if meets_threshold:
+                threshold_included += 1
             updates.append({**record, "_date_obj": date_obj, "_date_str": date_str})
+
+    # Print debug summary
+    print(f"  → Debug Summary:")
+    print(f"     • Empty date: {empty_date_count}")
+    print(f"     • Unparseable date: {unparseable_date_count}")
+    print(f"     • Outside window: {outside_window_count} (TopLine outside window: {topline_outside_window})")
+    print(f"     • Included (meets threshold): {threshold_included}")
+    print(f"     • Included (TopLine Flag=2): {topline_included}")
 
     updates.sort(key=lambda r: (
         str(r.get(STATE_COL, "")),
@@ -182,7 +225,7 @@ def filter_records(records):
     return updates
 
 
-# ── STEP 3: BUILD HTML ───────────────────────────────────────────────────────[...]
+# ── STEP 3: BUILD HTML ───────────────────────────────────────────────────────[.[...]
 
 def score_class(cold_hot):
     try:
@@ -329,7 +372,7 @@ def build_updates_html(updates):
     return "\n\n".join(sections)
 
 
-# ── STATE HEAT DATA ────────────────────────────────────────────────────────[...]
+# ── STATE HEAT DATA ────────────────────────────────────────────────────────[.[...]
 
 def compute_state_heat(updates):
     """Return dict: state_name → {total, hot3, abbrev, id}."""
@@ -358,7 +401,7 @@ def heat_class(n):
 
 
 
-# ── BUILD TOC CHIPS ────────────────────────────────────────────────────────[...]
+# ── BUILD TOC CHIPS ────────────────────────────────────────────────────────[.[...]
 
 def build_toc_html(state_info):
     chips = []
@@ -373,7 +416,7 @@ def build_toc_html(state_info):
     return '    <div class="toc-chips">\n' + "\n".join(chips) + '\n    </div>'
 
 
-# ── BUILD TOP ISSUES ────────────────────────────────────────────────────────[...]
+# ── BUILD TOP ISSUES ────────────────────────────────────────────────────────[[...]
 
 def build_top_issues_html(updates):
     issue_counts = Counter(safe(r.get(ISSUE_COL)) for r in updates if safe(r.get(ISSUE_COL)))
@@ -393,7 +436,7 @@ def build_top_issues_html(updates):
 
 
 
-# ── INJECTION FUNCTIONS ────────────────────────────────────────────────────────[...]
+# ── INJECTION FUNCTIONS ───────────────────────────────────────────────────────[...]
 
 def inject_between(html, begin_marker, end_marker, content):
     pattern = re.compile(re.escape(begin_marker) + r".*?" + re.escape(end_marker), re.DOTALL)
